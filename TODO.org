@@ -1,0 +1,44 @@
+* DONE Write accessors for atom data type.
+  Atoms are stored in two parallel arrays. The id array stores the ids, and the
+  body array stores (pred, char) pairs. Ids are 64-bit (yarn, weft) pairs, and
+  chars are 32-bit unsigned ints -- UTF-32, in other words. This allows for fast
+  searching by id, with better memory locality than if we put all this in one
+  array.
+
+  The id array is a uint64_t array, and the body array is a uint32_t array with
+  three times as many elements.
+
+* TODO Write weft data type. (weft_t)
+  For this, use a JudyL array mapping yarns to maximum offsets. Judy arrays are
+  usually pretty good about space-efficiency, so you shouldn't have to worry
+  about this using a shit-ton of memory. The operations we need on a weft are:
+** TODO Make empty weft.
+** TODO Get the top of a given yarn (weft_get)
+** TODO Set the top of a given yarn (weft_set)
+** TODO Extend a given yarn (weft_extend)
+** TODO Does a weft cover a given atom id? (weft_covers)
+** TODO Merge another weft into this one, modifying only this one. (weft_merge_into)
+
+* TODO Write memoization dict data type. (memo_dict_t)
+  This is a JudyL array of JudyL arrays. The outer array has yarns as keys; the
+  inner array has offsets as keys. To look up an id in this monstrosity, here's
+  the procedure:
+
+  1. Look up the yarn. If it's not found, return an empty weft. Otherwise:
+  2. Look up the offset or its earliest ancestor, using JLL to find the index,
+     and JLG to get the associated weft. Neither of these should fail; if they
+     do, then return an error code.
+  3. Return this weft. Hooray!
+
+  To add a weft to the monstrosity:
+
+  1. Look up the yarn. If it's not found, create a new JudyL array; call this
+     array =inner=. Insert an (offset -> weft) mapping into =inner=, and insert
+     (yarn -> =inner=) into the outer array. Return. OTHERWISE:
+  2. Use JLI to ensure that there is a mapping of offset->weft. If there's
+     already a weft at that position in the array, de-allocate it. Then set the
+     pointer (from JLI) to point to the new weft.
+  3. Return a success value! Hooray!
+
+* TODO Serialization for everything. In a stable format.
+  Ponder this later.
