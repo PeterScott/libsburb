@@ -31,7 +31,8 @@ void weft_print(weft_t weft) {
   printf("\n");
 }
 
-/* Create a copy of a weft, in new memory. */
+/* Create a copy of a weft, in new memory. If there is a malloc() failure,
+   returns ERRWEFT. */
 weft_t copy_weft(weft_t from) {
   Word_t index, value; Word_t *pvalue;
   weft_t to = NULL;
@@ -41,7 +42,10 @@ weft_t copy_weft(weft_t from) {
   while (pvalue != NULL) {
     value = *pvalue;
     JLI(pvalue, to, index);
-    if (pvalue == PJERR) return NULL;
+    if (pvalue == PJERR) {
+      JLFA(to);
+      return ERRWEFT;
+    }
     *pvalue = value;
     JLN(pvalue, from, index);
   }
@@ -57,7 +61,7 @@ uint32_t weft_get(weft_t weft, uint32_t yarn) {
   if (yarn == 0) return 2;
 
   JLG(pvalue, weft, yarn);
-  return pvalue == NULL ? 0 : *pvalue;
+  return (pvalue == NULL || pvalue == PJERR) ? 0 : *pvalue;
 }
 
 /* Set the top of a given yarn. Return 0 on success. Needs a pointer to the
