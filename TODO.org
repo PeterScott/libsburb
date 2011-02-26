@@ -8,16 +8,19 @@
   The id array is a uint64_t array, and the body array is a uint32_t array with
   three times as many elements.
 
-* TODO Write weft data type. (weft_t)
+* DONE Write weft data type. (weft_t)
   For this, use a JudyL array mapping yarns to maximum offsets. Judy arrays are
   usually pretty good about space-efficiency, so you shouldn't have to worry
   about this using a shit-ton of memory. The operations we need on a weft are:
-** TODO Make empty weft.
-** TODO Get the top of a given yarn (weft_get)
-** TODO Set the top of a given yarn (weft_set)
-** TODO Extend a given yarn (weft_extend)
-** TODO Does a weft cover a given atom id? (weft_covers)
-** TODO Merge another weft into this one, modifying only this one. (weft_merge_into)
+** DONE Make empty weft. (new_weft)
+** DONE Delete a weft. (delete_weft)
+** DONE Print a weft. (weft_print)
+** DONE Copy a weft. (copy_weft)
+** DONE Get the top of a given yarn (weft_get)
+** DONE Set the top of a given yarn (weft_set)
+** DONE Extend a given yarn (weft_extend)
+** DONE Does a weft cover a given atom id? (weft_covers)
+** DONE Merge another weft into this one, modifying only this one. (weft_merge_into)
 
 * TODO Write memoization dict data type. (memo_dict_t)
   This is a JudyL array of JudyL arrays. The outer array has yarns as keys; the
@@ -42,3 +45,8 @@
 
 * TODO Serialization for everything. In a stable format.
   Ponder this later.
+
+* TODO Turn off Judy error handling, except for malloc failures.
+  Method 2 in http://judy.sourceforge.net/doc/Judy_3x.htm#ERRORS
+
+  Do this once your program is working stably.
