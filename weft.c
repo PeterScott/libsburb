@@ -48,6 +48,9 @@ weft_t copy_weft(weft_t from) {
 uint32_t weft_get(weft_t weft, uint32_t yarn) {
   Word_t *pvalue;
 
+  /* Special case: all wefts have (0, 2). */
+  if (yarn == 0) return 2;
+
   JLG(pvalue, weft, yarn);
   return pvalue == NULL ? 0 : *pvalue;
 }
@@ -76,7 +79,8 @@ int weft_extend(weft_t *weft, uint32_t yarn, uint32_t offset) {
   return 0;
 }
 
-/* Does a weft cover a given atom id? Return a bool. */
+/* Does a weft cover a given atom id? Return a bool. As a special case, wefts
+   implicitly cover (0, 1) and (0, 2). */
 int weft_covers(weft_t weft, uint64_t id) {
   return OFFSET(id) <= weft_get(weft, YARN(id));
 }
