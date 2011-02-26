@@ -17,6 +17,11 @@ void delete_weft(weft_t weft) {
 void weft_print(weft_t weft) {
   Word_t index; Word_t *pvalue;
 
+  if (weft == NULL) {
+    printf("[null weft]\n");
+    return;
+  }
+
   index = 0;
   JLF(pvalue, weft, index);
   while (pvalue != NULL) {
