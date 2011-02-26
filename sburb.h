@@ -45,6 +45,12 @@
 /* A weft_t is a pointer to the weft structure itself. */
 typedef Pvoid_t weft_t;
 
+/* Not an actual weft, but an error value. */
+#define ERRWEFT ((weft_t)(-1))
+
+/* Safer deletor macro. Sets pointer to NULL afterward. */
+#define DELETE_WEFT(weft) do { delete_weft(weft); weft = (weft_t)NULL; } while (0);
+
 weft_t new_weft(void);
 void delete_weft(weft_t weft);
 void weft_print(weft_t weft);
@@ -54,5 +60,19 @@ int weft_set(weft_t *weft, uint32_t yarn, uint32_t offset);
 int weft_extend(weft_t *weft, uint32_t yarn, uint32_t offset);
 int weft_covers(weft_t weft, uint64_t id);
 int weft_merge_into(weft_t *dest, weft_t other);
+
+/************************ Id-to-weft memoization dicts ************************/
+
+/* A memodict is a JudyL array of JudyL arrays of wefts. */
+typedef Pvoid_t memodict_t;
+
+/* Safer deletor macro. Sets pointer to NULL afterward. */
+#define DELETE_MEMODICT(md) do { delete_memodict(md); md = (memodict_t)NULL; } while (0);
+
+memodict_t new_memodict(void);
+void delete_memodict(memodict_t memodict);
+void memodict_print(memodict_t memodict);
+int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
+
 
 #endif

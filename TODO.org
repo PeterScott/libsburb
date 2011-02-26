@@ -22,7 +22,7 @@
 ** DONE Does a weft cover a given atom id? (weft_covers)
 ** DONE Merge another weft into this one, modifying only this one. (weft_merge_into)
 
-* TODO Write memoization dict data type. (memo_dict_t)
+* TODO Write memoization dict data type. (memodict_t)
   This is a JudyL array of JudyL arrays. The outer array has yarns as keys; the
   inner array has offsets as keys. To look up an id in this monstrosity, here's
   the procedure:
@@ -31,7 +31,7 @@
   2. Look up the offset or its earliest ancestor, using JLL to find the index,
      and JLG to get the associated weft. Neither of these should fail; if they
      do, then return an error code.
-  3. Return this weft. Hooray!
+  3. Return a copy of this weft, extended to cover the current id. Hooray!
 
   To add a weft to the monstrosity:
 

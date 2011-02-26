@@ -36,6 +36,7 @@ void weft_print(weft_t weft) {
 weft_t copy_weft(weft_t from) {
   Word_t index, value; Word_t *pvalue;
   weft_t to = NULL;
+  Word_t rc_word;
   
   index = 0;
   JLF(pvalue, from, index);
@@ -43,7 +44,7 @@ weft_t copy_weft(weft_t from) {
     value = *pvalue;
     JLI(pvalue, to, index);
     if (pvalue == PJERR) {
-      JLFA(to);
+      JLFA(rc_word, to);
       return ERRWEFT;
     }
     *pvalue = value;
