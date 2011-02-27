@@ -173,38 +173,43 @@ weft_t pull(memodict_t memodict, uint64_t id, uint64_t pred) {
 //   }
 // }
 
-weft_t demoweft(void) {
-  weft_t weft = new_weft();
-
-  /* (3, 33) (0, 108) (7, 77) */
-  weft_set(&weft, 3, 33);
-  weft_set(&weft, 0, 108);
-  weft_extend(&weft, 7, 2);
-  weft_extend(&weft, 7, 77);
-  weft_extend(&weft, 7, 32);
-
-  return weft;
-}
-
-int main(void) {
-  weft_t weft1 = demoweft(), weft2 = demoweft();
-  memodict_t memodict = new_memodict();
-  weft_set(&weft1, 1, 1111);
-  weft_set(&weft2, 2, 2222);
-
-  LIFTERR(memodict_add(&memodict, PACK_ID(1, 119), weft1));
-  LIFTERR(memodict_add(&memodict, PACK_ID(2, 229), weft2));
-  LIFTERR(memodict_add(&memodict, PACK_ID(2, 69), copy_weft(weft2)));
-  LIFTERR(memodict_add(&memodict, PACK_ID(2, 229), demoweft()));
-  memodict_print(memodict);
-
-  printf("[1]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 30)));  /* null */
-  printf("[2]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 119))); /* weft1 */
-  printf("[3]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 125))); /* weft1 */
-  printf("[4]\n"); weft_print(memodict_get(memodict, PACK_ID(3, 33)));  /* null */
-  printf("[5]\n"); weft_print(memodict_get(memodict, PACK_ID(2, 70)));  /* weft2 */
-  printf("[6]\n"); weft_print(memodict_get(memodict, PACK_ID(2, 230))); /* demoweft */
-
-  DELETE_MEMODICT(memodict);
-  return 0;
-}
+// weft_t demoweft(void) {
+//   weft_t weft = new_weft();
+// 
+//   /* (3, 33) (0, 108) (7, 77) */
+//   weft_set(&weft, 3, 33);
+//   weft_set(&weft, 0, 108);
+//   weft_extend(&weft, 7, 2);
+//   weft_extend(&weft, 7, 77);
+//   weft_extend(&weft, 7, 32);
+// 
+//   return weft;
+// }
+// 
+// int main(void) {
+//   weft_t weft1 = demoweft(), weft2 = demoweft();
+//   memodict_t memodict = new_memodict();
+//   weft_set(&weft1, 1, 1111);
+//   weft_set(&weft2, 2, 2222);
+// 
+//   LIFTERR(memodict_add(&memodict, PACK_ID(1, 119), weft1));
+//   LIFTERR(memodict_add(&memodict, PACK_ID(2, 229), weft2));
+//   LIFTERR(memodict_add(&memodict, PACK_ID(2, 69), copy_weft(weft2)));
+//   LIFTERR(memodict_add(&memodict, PACK_ID(2, 229), demoweft()));
+//   memodict_print(memodict);
+// 
+//   printf("[1]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 30)));  /* null */
+//   printf("[2]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 119))); /* weft1 */
+//   printf("[3]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 125))); /* weft1 */
+//   printf("[4]\n"); weft_print(memodict_get(memodict, PACK_ID(3, 33)));  /* null */
+//   printf("[5]\n"); weft_print(memodict_get(memodict, PACK_ID(2, 70)));  /* weft2 */
+//   printf("[6]\n"); weft_print(memodict_get(memodict, PACK_ID(2, 230))); /* demoweft */
+// 
+//   printf("[7]\n"); weft_print(pull(memodict, PACK_ID(2, 230), PACK_ID(1, 119)));
+//   printf("[8]\n"); weft_print(pull(memodict, PACK_ID(2, 230), PACK_ID(1, 30)));
+//   printf("[9]\n"); weft_print(pull(memodict, PACK_ID(2, 70), PACK_ID(3, 45)));
+//   printf("[10]\n"); weft_print(pull(memodict, PACK_ID(2, 70), 0));
+// 
+//   DELETE_MEMODICT(memodict);
+//   return 0;
+// }
