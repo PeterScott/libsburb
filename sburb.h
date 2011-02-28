@@ -111,6 +111,28 @@ int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 /* A patch, or rather, a pointer to a patch data structure. */
 typedef void* patch_t;
 
+#define READ_PATCH_HEADER(length_bytes, chain_count, ptr) do {               \
+    length_bytes = patch_length_bytes((patch_t)ptr);                         \
+    chain_count  = patch_chain_count((patch_t)ptr);                          \
+    ptr = ((uint8_t *)ptr) + 5;                                              \
+  } while (0);
+
+#define READ_CHAIN_DESCRIPTOR(offset, len_atoms, ptr) do {                   \
+    offset = *(uint32_t *)ptr; ptr = (typeof (ptr))((uint32_t *)ptr + 1);    \
+    len_atoms = *(uint16_t *)ptr; ptr = (typeof (ptr))((uint16_t *)ptr + 1); \
+  } while (0);
+
+uint32_t patch_length_bytes(patch_t patch);
+uint8_t patch_chain_count(patch_t patch);
+uint32_t patch_length_atoms(patch_t patch);
+void *patch_atoms(patch_t patch);
+uint32_t patch_necessary_buffer_length(uint8_t chain_count, uint32_t atom_count);
+void write_patch_header(void **dest, uint32_t length_bytes, uint8_t chain_count);
+void write_chain_descriptor(void **dest, uint32_t offset, uint16_t len_atoms);
+size_t chain_size_bytes(uint32_t atom_count);
+void write_chain(void **dest, void *src, uint32_t atom_count);
+
+
 /**************************** Debugging functions *****************************/
 #ifdef DEBUG
 

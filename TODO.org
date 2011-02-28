@@ -46,7 +46,7 @@
      pointer (from JLI) to point to the new weft.
   3. Return a success value! Hooray!
 
-* TODO Write patch data type
+* DONE Write patch data type
    A patch is a collection of chains. Each chain is a sequence of atoms (in
    sequential format), consisting of a single type of atom: insertions,
    deletors, or save-awareness atoms. Each atom in an insertion chain must have

@@ -40,7 +40,15 @@ inline uint8_t patch_chain_count(patch_t patch) {
 
 /* Return the length of a patch, in atoms. */
 uint32_t patch_length_atoms(patch_t patch) {
-  return -1;                    /* FIXME */
+  uint8_t *ptr = patch; ptr += 5;
+  uint32_t offset; uint16_t len_atoms = 0; uint32_t atom_count = 0;
+
+  for (int i = patch_chain_count(patch); i > 0; i--) {
+    READ_CHAIN_DESCRIPTOR(offset, len_atoms, ptr);
+    atom_count += len_atoms;
+  }
+
+  return atom_count;
 }
 
 /* Return a pointer to the start of the atoms in a patch. */
@@ -109,10 +117,12 @@ int main(void) {
   WRITE_ATOM_SEQ(PACK_ID(1,3), PACK_ID(1,2), 's', p32);
   WRITE_ATOM_SEQ(PACK_ID(1,4), PACK_ID(1,3), 't', p32);
   assert((uint8_t*)p32 - (uint8_t*)patch1 == patch1_len);
+  assert(patch_length_atoms(patch1) == 4);
 
   printf("Patch 1: Alice types 'Test'\n");
   printf("  Length: %u bytes\n", patch_length_bytes(patch1));
   printf("  Number of chains: %u\n", patch_chain_count(patch1));
+  printf("  Number of atoms: %u\n", patch_length_atoms(patch1));
 
   /* Patch 2: Bob deletes 's', inserts 'x' */
   void *patch2, *patch2_cursor;
@@ -125,12 +135,30 @@ int main(void) {
   WRITE_ATOM_SEQ(PACK_ID(2,1), PACK_ID(1,3), ATOM_CHAR_DEL, p32);
   WRITE_ATOM_SEQ(PACK_ID(2,2), PACK_ID(1,2), 'x', p32);
   assert((uint8_t*)p32 - (uint8_t*)patch2 == patch2_len);
+  assert(patch_length_atoms(patch2) == 2);
 
   printf("Patch 2: Bob deletes 's', inserts 'x'\n");
   printf("  Length: %u bytes\n", patch_length_bytes(patch2));
   printf("  Number of chains: %u\n", patch_chain_count(patch2));
+  printf("  Number of atoms: %u\n", patch_length_atoms(patch2));
+
+  /* Patch 3: Alice saves awareness of Bob's patches */
+  void *patch3, *patch3_cursor;
+  uint32_t patch3_len = patch_necessary_buffer_length(1, 1);
+  patch3 = malloc(patch3_len); patch3_cursor = patch3;
+  write_patch_header(&patch3_cursor, patch3_len, 1);
+  write_chain_descriptor(&patch3_cursor, 0, 1);
+  p32 = patch3_cursor;
+  WRITE_ATOM_SEQ(PACK_ID(1,5), PACK_ID(2,2), ATOM_CHAR_SAVE, p32);
+  assert((uint8_t*)p32 - (uint8_t*)patch3 == patch3_len);
+  assert(patch_length_atoms(patch3) == 1);
+
+  printf("Patch 3: Alice saves awareness of Bob's patches\n");
+  printf("  Length: %u bytes\n", patch_length_bytes(patch3));
+  printf("  Number of chains: %u\n", patch_chain_count(patch3));
+  printf("  Number of atoms: %u\n", patch_length_atoms(patch3));
   
 
-  free(patch1);
+  free(patch1); free(patch2); free(patch3);
   return 0;
 }
