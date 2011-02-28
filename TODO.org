@@ -22,7 +22,7 @@
 ** DONE Does a weft cover a given atom id? (weft_covers)
 ** DONE Merge another weft into this one, modifying only this one. (weft_merge_into)
 
-* TODO Write memoization dict data type. (memodict_t)
+* DONE Write memoization dict data type. (memodict_t)
   This is a JudyL array of JudyL arrays. The outer array has yarns as keys; the
   inner array has offsets as keys. To look up an id in this monstrosity, here's
   the procedure:
