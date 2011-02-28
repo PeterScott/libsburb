@@ -147,7 +147,10 @@ weft_t memodict_get(memodict_t memodict, uint64_t id) {
 weft_t pull(memodict_t memodict, uint64_t id, uint64_t pred) {
   weft_t weft = copy_weft(memodict_get(memodict, id));
   if (weft == ERRWEFT) return ERRWEFT;
-  if (weft_extend(&weft, YARN(id), OFFSET(id)) != 0) return ERRWEFT;
+  if (weft_extend(&weft, YARN(id), OFFSET(id)) != 0) {
+    delete_weft(weft);
+    return ERRWEFT;
+  }
 
   if (pred != 0) {
     weft_t pred_weft = memodict_get(memodict, pred); /* not extended */
