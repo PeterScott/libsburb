@@ -68,11 +68,10 @@
 
    <length in bytes: uint32_t><number-of-chains: uint8_t>
    # Offsets in bytes, and lengths in atoms, of each chain. Offsets relative to
-   # start of patch. Can use this to calculate total length, in atoms.
+   # [MARK]. Can use this to calculate total length, in atoms.
    <chain1-offset-len: uint32_t, uint16_t>, <chain2-offset-len: uint32_t, uint16_t>, ...
-   <atoms of chain1><atoms of chain2> ...
+   [MARK]<atoms of chain1><atoms of chain2> ...
    
-
 * TODO Write waiting-set data type (waitingset_t)
 * TODO Write vector weave data type (weave_t)
 * TODO Write patch insertion for vector weaves.
