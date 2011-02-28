@@ -6,7 +6,7 @@
    body array stores (pred, char) pairs. Ids are (yarn, weft) pairs, and
    chars are 32-bit unsigned ints. Hooray for UTF-32, I guess. */
 
-int main(void) {
+void test_par(void) {
   uint64_t id_a[64];
   uint32_t body_a[64*3];
 
@@ -32,6 +32,37 @@ int main(void) {
   printf("id:(%u, %u) pred:(%u, %u) '%c'\n", YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), c);
   READ_ATOM(id, pred, c, id_ptr, body_ptr);
   printf("id:(%u, %u) pred:(%u, %u) '%c'\n", YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), c);
+}
 
+void test_seq(void) {
+  uint32_t arr[64*4];
+
+  uint64_t id; uint64_t pred; uint32_t c; uint32_t *ptr;
+  ptr = arr;
+  id = PACK_ID(4, 44);
+  pred = PACK_ID(666, 6543210);
+  c = 'Q';
+
+  printf("id:(%u, %u) pred:(%u, %u) '%c'\n", YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), c);
+  WRITE_ATOM_SEQ(id, pred, c, ptr);
+
+  id = PACK_ID(0, 42);
+  pred = PACK_ID(77, 108);
+  c = 'Z';
+
+  printf("id:(%u, %u) pred:(%u, %u) '%c'\n", YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), c);
+  WRITE_ATOM_SEQ(id, pred, c, ptr);
+
+  id = 0; pred = 0; c = '%'; ptr = arr;
+
+  READ_ATOM_SEQ(id, pred, c, ptr);
+  printf("id:(%u, %u) pred:(%u, %u) '%c'\n", YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), c);
+  READ_ATOM_SEQ(id, pred, c, ptr);
+  printf("id:(%u, %u) pred:(%u, %u) '%c'\n", YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), c);
+}
+
+int main(void) {
+  test_par();
+  test_seq();
   return 0;
 }

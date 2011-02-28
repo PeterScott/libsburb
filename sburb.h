@@ -39,6 +39,22 @@
     *body_ptr++ = c;                                   \
   } while (0);
 
+/* Read an atom from a location, sequentially. Location pointer (uint32_t *) is
+   incremented. Pass in only variable names. */
+#define READ_ATOM_SEQ(id, pred, c, ptr) do {  \
+    id   = *((uint64_t *)ptr); ptr += 2;      \
+    pred = *((uint64_t *)ptr); ptr += 2;      \
+    c = *ptr++;                               \
+  } while (0);
+
+/* Write an atom to a location, sequentially. Location pointer (uint32_t *) is
+   incremented. Pass in only variable names. */
+#define WRITE_ATOM_SEQ(id, pred, c, ptr) do { \
+    *(uint64_t *)ptr = id;   ptr += 2;        \
+    *(uint64_t *)ptr = pred; ptr += 2;        \
+    *ptr++ = c;                               \
+  } while (0);
+
 /* The four special atom characters. These are the only invisible chars. */
 #define ATOM_CHAR_START 0xE000
 #define ATOM_CHAR_END   0xE001
@@ -87,6 +103,12 @@ int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 /*********************************** Weaves ***********************************/
 
 #include "vector_weave.h"
+
+
+/********************************** Patches ***********************************/
+
+/* A patch, or rather, a pointer to a patch data structure. */
+typedef void* patch_t;
 
 /**************************** Debugging functions *****************************/
 #ifdef DEBUG

@@ -8,6 +8,9 @@
   The id array is a uint64_t array, and the body array is a uint32_t array with
   three times as many elements.
 
+* DONE Write sequential accessors for atoms
+  Just like regular accessors, but sequential.
+
 * DONE Write weft data type. (weft_t)
   For this, use a JudyL array mapping yarns to maximum offsets. Judy arrays are
   usually pretty good about space-efficiency, so you shouldn't have to worry
@@ -43,6 +46,36 @@
      pointer (from JLI) to point to the new weft.
   3. Return a success value! Hooray!
 
+* TODO Write patch data type
+   A patch is a collection of chains. Each chain is a sequence of atoms (in
+   sequential format), consisting of a single type of atom: insertions,
+   deletors, or save-awareness atoms. Each atom in an insertion chain must have
+   the previous atom as its predecessor, except for the first one (the
+   head). Every atom in a patch must be in the same yarn. Every atom in a patch
+   (except for the head of the first chain) must have an offset one higher than
+   the atom before it. No atom in a non-insertion chain, nor the head of an
+   insertion chain, may have a predecessor in the patch. This has a few
+   implications:
+
+   1. You can determine the id range of a patch trivially. Call the yarn and
+      offset of the head atom y0 and o0, and the length (in atoms) len. The ids
+      in the patch range from (y0, o0) to (y0, o0 + len - 1).
+
+   2. You can check the predecessors-outside-patch rule with a simple range
+      check, once you've used property (1).
+
+   The patch format is as follows:
+
+   <length in bytes: uint32_t><number-of-chains: uint8_t>
+   # Offsets in bytes, and lengths in atoms, of each chain. Offsets relative to
+   # start of patch. Can use this to calculate total length, in atoms.
+   <chain1-offset-len: uint32_t, uint16_t>, <chain2-offset-len: uint32_t, uint16_t>, ...
+   <atoms of chain1><atoms of chain2> ...
+   
+
+* TODO Write waiting-set data type (waitingset_t)
+* TODO Write vector weave data type (weave_t)
+* TODO Write patch insertion for vector weaves.
 * TODO Serialization for everything. In a stable format.
   Ponder this later.
 
