@@ -97,13 +97,40 @@ void write_chain(void **dest, void *src, uint32_t atom_count) {
 }
 
 int main(void) {
-  uint8_t arr8[1024*16];        /* 15 kB array */
-  void *ptr = arr8;
+  /* Patch 1: Alice types "Test" */
+  void *patch1, *patch1_cursor;
+  uint32_t patch1_len = patch_necessary_buffer_length(1, 4);
+  patch1 = malloc(patch1_len); patch1_cursor = patch1;
+  write_patch_header(&patch1_cursor, patch1_len, 1);
+  write_chain_descriptor(&patch1_cursor, 0, 4);
+  uint32_t *p32 = patch1_cursor;
+  WRITE_ATOM_SEQ(PACK_ID(1,1), PACK_ID(0,1), 'T', p32);
+  WRITE_ATOM_SEQ(PACK_ID(1,2), PACK_ID(1,1), 'e', p32);
+  WRITE_ATOM_SEQ(PACK_ID(1,3), PACK_ID(1,2), 's', p32);
+  WRITE_ATOM_SEQ(PACK_ID(1,4), PACK_ID(1,3), 't', p32);
+  assert((uint8_t*)p32 - (uint8_t*)patch1 == patch1_len);
 
-  write_patch_header(&ptr, 42, 3);  
+  printf("Patch 1: Alice types 'Test'\n");
+  printf("  Length: %u bytes\n", patch_length_bytes(patch1));
+  printf("  Number of chains: %u\n", patch_chain_count(patch1));
 
-  printf("Length: %u bytes\n", patch_length_bytes(arr8));
-  printf("Number of chains: %u\n", patch_chain_count(arr8));
+  /* Patch 2: Bob deletes 's', inserts 'x' */
+  void *patch2, *patch2_cursor;
+  uint32_t patch2_len = patch_necessary_buffer_length(2, 2);
+  patch2 = malloc(patch2_len); patch2_cursor = patch2;
+  write_patch_header(&patch2_cursor, patch2_len, 2);
+  write_chain_descriptor(&patch2_cursor, 0, 1);
+  write_chain_descriptor(&patch2_cursor, chain_size_bytes(1), 1);
+  p32 = patch2_cursor;
+  WRITE_ATOM_SEQ(PACK_ID(2,1), PACK_ID(1,3), ATOM_CHAR_DEL, p32);
+  WRITE_ATOM_SEQ(PACK_ID(2,2), PACK_ID(1,2), 'x', p32);
+  assert((uint8_t*)p32 - (uint8_t*)patch2 == patch2_len);
 
+  printf("Patch 2: Bob deletes 's', inserts 'x'\n");
+  printf("  Length: %u bytes\n", patch_length_bytes(patch2));
+  printf("  Number of chains: %u\n", patch_chain_count(patch2));
+  
+
+  free(patch1);
   return 0;
 }
