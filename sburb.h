@@ -75,4 +75,13 @@ void memodict_print(memodict_t memodict);
 int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 
 
+/**************************** Debugging functions *****************************/
+#ifdef DEBUG
+
+weft_t quickweft(const char *str);
+void quickweft_print(weft_t weft);
+
+#endif
+
+
 #endif

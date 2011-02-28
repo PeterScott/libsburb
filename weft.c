@@ -112,6 +112,39 @@ int weft_merge_into(weft_t *dest, weft_t other) {
   return 0;
 }
 
+
+/********************************* Debugging **********************************/
+#ifdef DEBUG
+
+/* Turn a string like "a5b3d1" into a weft, and return the new weft. Does not do
+   error checking, and requires that the weft be de-allocated by the client. */
+weft_t quickweft(const char *str) {
+  weft_t weft = new_weft();
+
+  for (int i = 0; i < strlen(str); i += 2)
+    weft_set(&weft, str[i] - 'a', str[i+1] - '0');
+
+  return weft;
+}
+
+/* Print a weft in quickweft() format. */
+void quickweft_print(weft_t weft) {
+  Word_t index; Word_t *pvalue;
+
+  printf("<"); index = 0;
+  JLF(pvalue, weft, index);
+  while (pvalue != NULL) {
+    printf("%c%lu", (char)(index & 0xFF) + 'a', *pvalue);
+    JLN(pvalue, weft, index);
+  }
+  printf(">\n");
+}
+
+#endif
+
+
+/********************************** Testing ***********************************/
+
 // int main(void) {
 //   weft_t weft = new_weft();
 // 
@@ -140,7 +173,12 @@ int weft_merge_into(weft_t *dest, weft_t other) {
 //   LIFTERR(weft_merge_into(&weft, weft3));
 //   weft_print(weft);             /* 0:108, 3:33, 5:55, 7:1234567 */
 // 
+//   weft_t qweft = quickweft("a5b3d1");
+//   quickweft_print(qweft);
+//   
 //   delete_weft(weft);
 //   delete_weft(weft2);
+//   delete_weft(weft3);
+//   delete_weft(qweft);
 //   return 0;
 // }
