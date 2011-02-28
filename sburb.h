@@ -39,6 +39,15 @@
     *body_ptr++ = c;                                   \
   } while (0);
 
+/* The four special atom characters. These are the only invisible chars. */
+#define ATOM_CHAR_START 0xE000
+#define ATOM_CHAR_END   0xE001
+#define ATOM_CHAR_DEL   0xE002
+#define ATOM_CHAR_SAVE  0xE003
+
+/* Is an atom character c visible? May evaluate c twice. */
+#define ATOM_CHAR_IS_VISIBLE(c) ((c) < 0xE000 || (c) > 0xE003)
+
 
 /*********************************** Wefts ************************************/
 
@@ -74,6 +83,10 @@ void delete_memodict(memodict_t memodict);
 void memodict_print(memodict_t memodict);
 int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 
+
+/*********************************** Weaves ***********************************/
+
+#include "vector_weave.h"
 
 /**************************** Debugging functions *****************************/
 #ifdef DEBUG
