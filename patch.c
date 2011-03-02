@@ -59,6 +59,35 @@ inline void *patch_atoms(patch_t patch) {
   return ptr;
 }
 
+/* Print a patch, for debugging. */
+void print_patch(patch_t patch) {
+  uint32_t *p32 = patch; void *ptr = patch;
+  uint32_t length_bytes; uint8_t chain_count;
+  READ_PATCH_HEADER(length_bytes, chain_count, ptr); p32 = ptr;
+  uint16_t *chain_lengths = malloc(chain_count * sizeof(uint16_t));
+  printf("== Patch with %u atoms in %u chains, taking %u bytes.\n",
+         patch_length_atoms(patch), chain_count, length_bytes);
+  /* Read chain lengths */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    uint16_t len_atoms = 0; uint32_t offset = 0;
+    READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
+    chain_lengths[chain] = len_atoms;
+  }
+  /* Print each chain */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    printf("* Chain %u (%u atoms)\n", chain, chain_lengths[chain]);
+    for (uint16_t i = 0; i < chain_lengths[chain]; i++) {
+      uint64_t id, pred; uint32_t c;
+      READ_ATOM_SEQ(id, pred, c, p32);
+      printf("<id: %u,%u\tpred: %u,%u\t",
+             YARN(id), OFFSET(id), YARN(pred), OFFSET(pred));
+      if (c < 128) printf("%c>\n", (char)c);
+      else printf("0x%X>\n", c);
+    }
+  }
+  printf("END OF PATCH\n\n");
+}
+
 /****************************** Writing patches *******************************/
 
 /* Return the necessary buffer length, in bytes, to hold a patch with a given
@@ -120,9 +149,7 @@ int main(void) {
   assert(patch_length_atoms(patch1) == 4);
 
   printf("Patch 1: Alice types 'Test'\n");
-  printf("  Length: %u bytes\n", patch_length_bytes(patch1));
-  printf("  Number of chains: %u\n", patch_chain_count(patch1));
-  printf("  Number of atoms: %u\n", patch_length_atoms(patch1));
+  print_patch(patch1);
 
   /* Patch 2: Bob deletes 's', inserts 'x' */
   void *patch2, *patch2_cursor;
@@ -138,9 +165,7 @@ int main(void) {
   assert(patch_length_atoms(patch2) == 2);
 
   printf("Patch 2: Bob deletes 's', inserts 'x'\n");
-  printf("  Length: %u bytes\n", patch_length_bytes(patch2));
-  printf("  Number of chains: %u\n", patch_chain_count(patch2));
-  printf("  Number of atoms: %u\n", patch_length_atoms(patch2));
+  print_patch(patch2);
 
   /* Patch 3: Alice saves awareness of Bob's patches */
   void *patch3, *patch3_cursor;
@@ -154,10 +179,7 @@ int main(void) {
   assert(patch_length_atoms(patch3) == 1);
 
   printf("Patch 3: Alice saves awareness of Bob's patches\n");
-  printf("  Length: %u bytes\n", patch_length_bytes(patch3));
-  printf("  Number of chains: %u\n", patch_chain_count(patch3));
-  printf("  Number of atoms: %u\n", patch_length_atoms(patch3));
-  
+  print_patch(patch3);  
 
   free(patch1); free(patch2); free(patch3);
   return 0;
