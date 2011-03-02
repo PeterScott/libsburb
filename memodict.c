@@ -1,6 +1,6 @@
 /* An id-to-weft memoization dict. This stores awareness wefts for every atom
    which has a predecessor in another yarn. If this invariant is maintained,
-   then it makes O(1) pulling of awareness wefts for any atom possible. 
+   then it makes O(1) pulling of awareness wefts for any atom possible.
 
    Internally, it's a JudyL array of JudyL arrays. The outer array has yarns as
    keys; the inner array has offsets as keys. To look up an id in this monstrosity, here's
@@ -11,9 +11,9 @@
       and JLG to get the associated weft. Neither of these should fail; if they
       do, then return an error code.
    3. Return a copy of this weft, extended to cover the current id. Hooray!
-  
+
    To add a weft to the monstrosity:
-  
+
    1. Look up the yarn. If it's not found, create a new JudyL array; call this
       array =inner=. Insert an (offset -> weft) mapping into =inner=, and insert
       (yarn -> =inner=) into the outer array. Return. OTHERWISE:
@@ -168,7 +168,7 @@ weft_t pull(memodict_t memodict, uint64_t id, uint64_t pred) {
 
 // void print_keys(Pvoid_t judy) {
 //   Word_t index = 0; Word_t *pvalue;
-// 
+//
 //   JLF(pvalue, judy, index);
 //   while (pvalue != NULL) {
 //     printf("Index: %llu\n", (uint64_t)index);
@@ -178,41 +178,41 @@ weft_t pull(memodict_t memodict, uint64_t id, uint64_t pred) {
 
 // weft_t demoweft(void) {
 //   weft_t weft = new_weft();
-// 
+//
 //   /* (3, 33) (0, 108) (7, 77) */
 //   weft_set(&weft, 3, 33);
 //   weft_set(&weft, 0, 108);
 //   weft_extend(&weft, 7, 2);
 //   weft_extend(&weft, 7, 77);
 //   weft_extend(&weft, 7, 32);
-// 
+//
 //   return weft;
 // }
-// 
+//
 // int main(void) {
 //   weft_t weft1 = demoweft(), weft2 = demoweft();
 //   memodict_t memodict = new_memodict();
 //   weft_set(&weft1, 1, 1111);
 //   weft_set(&weft2, 2, 2222);
-// 
+//
 //   LIFTERR(memodict_add(&memodict, PACK_ID(1, 119), weft1));
 //   LIFTERR(memodict_add(&memodict, PACK_ID(2, 229), weft2));
 //   LIFTERR(memodict_add(&memodict, PACK_ID(2, 69), copy_weft(weft2)));
 //   LIFTERR(memodict_add(&memodict, PACK_ID(2, 229), demoweft()));
 //   memodict_print(memodict);
-// 
+//
 //   printf("[1]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 30)));  /* null */
 //   printf("[2]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 119))); /* weft1 */
 //   printf("[3]\n"); weft_print(memodict_get(memodict, PACK_ID(1, 125))); /* weft1 */
 //   printf("[4]\n"); weft_print(memodict_get(memodict, PACK_ID(3, 33)));  /* null */
 //   printf("[5]\n"); weft_print(memodict_get(memodict, PACK_ID(2, 70)));  /* weft2 */
 //   printf("[6]\n"); weft_print(memodict_get(memodict, PACK_ID(2, 230))); /* demoweft */
-// 
+//
 //   printf("[7]\n"); weft_print(pull(memodict, PACK_ID(2, 230), PACK_ID(1, 119)));
 //   printf("[8]\n"); weft_print(pull(memodict, PACK_ID(2, 230), PACK_ID(1, 30)));
 //   printf("[9]\n"); weft_print(pull(memodict, PACK_ID(2, 70), PACK_ID(3, 45)));
 //   printf("[10]\n"); weft_print(pull(memodict, PACK_ID(2, 70), 0));
-// 
+//
 //   DELETE_MEMODICT(memodict);
 //   return 0;
 // }

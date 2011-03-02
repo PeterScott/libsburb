@@ -37,7 +37,7 @@ weft_t copy_weft(weft_t from) {
   Word_t index, value; Word_t *pvalue;
   weft_t to = NULL;
   Word_t rc_word;
-  
+
   index = 0;
   JLF(pvalue, from, index);
   while (pvalue != NULL) {
@@ -100,7 +100,7 @@ int weft_covers(weft_t weft, uint64_t id) {
    success. */
 int weft_merge_into(weft_t *dest, weft_t other) {
   Word_t yarn, offset; Word_t *pvalue;
-  
+
   yarn = 0;
   JLF(pvalue, other, yarn);
   while (pvalue != NULL) {
@@ -147,35 +147,35 @@ void quickweft_print(weft_t weft) {
 
 // int main(void) {
 //   weft_t weft = new_weft();
-// 
+//
 //   /* (3, 33) (0, 108) (7, 77) */
 //   LIFTERR(weft_set(&weft, 3, 33));
 //   LIFTERR(weft_set(&weft, 0, 108));
 //   LIFTERR(weft_extend(&weft, 7, 2));
 //   LIFTERR(weft_extend(&weft, 7, 77));
 //   LIFTERR(weft_extend(&weft, 7, 32));
-// 
+//
 //   printf("weft[3] = %u (should be 33)\n", weft_get(weft, 3));
 //   weft_print(weft);
-// 
+//
 //   weft_t weft2 = copy_weft(weft);
 //   weft_print(weft2);
-// 
+//
 //   printf("11010: %i%i%i%i%i\n", weft_covers(weft, PACK_ID(7, 50)),
 //          weft_covers(weft, PACK_ID(7, 77)), weft_covers(weft, PACK_ID(7, 78)),
 //          weft_covers(weft, PACK_ID(3, 30)), weft_covers(weft, PACK_ID(2, 1)));
-// 
+//
 //   weft_t weft3 = new_weft();
 //   LIFTERR(weft_set(&weft3, 5, 55));
 //   LIFTERR(weft_set(&weft3, 3, 13));
 //   LIFTERR(weft_set(&weft3, 7, 1234567));
-// 
+//
 //   LIFTERR(weft_merge_into(&weft, weft3));
 //   weft_print(weft);             /* 0:108, 3:33, 5:55, 7:1234567 */
-// 
+//
 //   weft_t qweft = quickweft("a5b3d1");
 //   quickweft_print(qweft);
-//   
+//
 //   delete_weft(weft);
 //   delete_weft(weft2);
 //   delete_weft(weft3);

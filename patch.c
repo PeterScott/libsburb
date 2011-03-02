@@ -158,7 +158,7 @@ uint64_t patch_blocking_id(patch_t patch, weft_t weft) {
     READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
     chain_lengths[chain] = len_atoms;
   }
-  
+
   /* Check that first atom is directly above weft */
   READ_ATOM_SEQ(id, pred, c, p32); p32 -= 5; /* peek */
   if (weft_get(weft, YARN(id)) + 1 != OFFSET(id)) {
@@ -200,7 +200,7 @@ uint64_t patch_blocking_id(patch_t patch, weft_t weft) {
   free(chain_lengths);
   return 0;
 }
-      
+
 
 /******************************** Testing code ********************************/
 

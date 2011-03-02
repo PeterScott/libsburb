@@ -29,7 +29,7 @@ void delete_weave(weave_t weave) {
 void weave_print(weave_t weave) {
   uint64_t id, pred; uint32_t c;
   uint64_t *ids = weave.ids; uint32_t *bodies = weave.bodies;
-  
+
   for (int i = 0; i < weave.length; i++) {
     READ_ATOM(id, pred, c, ids, bodies);
     printf("<id: %u,%u\tpred: %u,%u\t",
