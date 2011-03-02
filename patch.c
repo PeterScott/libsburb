@@ -59,35 +59,6 @@ inline void *patch_atoms(patch_t patch) {
   return ptr;
 }
 
-/* Print a patch, for debugging. */
-void print_patch(patch_t patch) {
-  uint32_t *p32 = patch; void *ptr = patch;
-  uint32_t length_bytes; uint8_t chain_count;
-  READ_PATCH_HEADER(length_bytes, chain_count, ptr); p32 = ptr;
-  uint16_t *chain_lengths = malloc(chain_count * sizeof(uint16_t));
-  printf("== Patch with %u atoms in %u chains, taking %u bytes.\n",
-         patch_length_atoms(patch), chain_count, length_bytes);
-  /* Read chain lengths */
-  for (uint32_t chain = 0; chain < chain_count; chain++) {
-    uint16_t len_atoms = 0; uint32_t offset = 0;
-    READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
-    chain_lengths[chain] = len_atoms;
-  }
-  /* Print each chain */
-  for (uint32_t chain = 0; chain < chain_count; chain++) {
-    printf("* Chain %u (%u atoms)\n", chain, chain_lengths[chain]);
-    for (uint16_t i = 0; i < chain_lengths[chain]; i++) {
-      uint64_t id, pred; uint32_t c;
-      READ_ATOM_SEQ(id, pred, c, p32);
-      printf("<id: %u,%u\tpred: %u,%u\t",
-             YARN(id), OFFSET(id), YARN(pred), OFFSET(pred));
-      if (c < 128) printf("%c>\n", (char)c);
-      else printf("0x%X>\n", c);
-    }
-  }
-  printf("END OF PATCH\n\n");
-}
-
 /****************************** Writing patches *******************************/
 
 /* Return the necessary buffer length, in bytes, to hold a patch with a given
@@ -132,6 +103,39 @@ void write_chain(void **dest, void *src, uint32_t atom_count) {
   memcpy(*dest, src, size);
   *dest = (void *)p8;
 }
+
+/************************ High-level patch operations *************************/
+
+/* Print a patch, for debugging. */
+void print_patch(patch_t patch) {
+  uint32_t *p32 = patch; void *ptr = patch;
+  uint32_t length_bytes; uint8_t chain_count;
+  READ_PATCH_HEADER(length_bytes, chain_count, ptr); p32 = ptr;
+  uint16_t *chain_lengths = malloc(chain_count * sizeof(uint16_t));
+  printf("== Patch with %u atoms in %u chains, taking %u bytes.\n",
+         patch_length_atoms(patch), chain_count, length_bytes);
+  /* Read chain lengths */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    uint16_t len_atoms = 0; uint32_t offset = 0;
+    READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
+    chain_lengths[chain] = len_atoms;
+  }
+  /* Print each chain */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    printf("* Chain %u (%u atoms)\n", chain, chain_lengths[chain]);
+    for (uint16_t i = 0; i < chain_lengths[chain]; i++) {
+      uint64_t id, pred; uint32_t c;
+      READ_ATOM_SEQ(id, pred, c, p32);
+      printf("<id: %u,%u\tpred: %u,%u\t",
+             YARN(id), OFFSET(id), YARN(pred), OFFSET(pred));
+      if (c < 128) printf("%c>\n", (char)c);
+      else printf("0x%X>\n", c);
+    }
+  }
+  printf("END OF PATCH\n\n");
+  free(chain_lengths);
+}
+  
 
 int main(void) {
   /* Patch 1: Alice types "Test" */
