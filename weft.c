@@ -122,7 +122,7 @@ weft_t quickweft(const char *str) {
   weft_t weft = new_weft();
 
   for (int i = 0; i < strlen(str); i += 2)
-    weft_set(&weft, str[i] - 'a', str[i+1] - '0');
+    weft_set(&weft, str[i] - 'a' + 1, str[i+1] - '0');
 
   return weft;
 }
@@ -134,7 +134,7 @@ void quickweft_print(weft_t weft) {
   printf("<"); index = 0;
   JLF(pvalue, weft, index);
   while (pvalue != NULL) {
-    printf("%c%lu", (char)(index & 0xFF) + 'a', *pvalue);
+    printf("%c%lu", (char)(index & 0xFF) + 'a' - 1, *pvalue);
     JLN(pvalue, weft, index);
   }
   printf(">\n");
