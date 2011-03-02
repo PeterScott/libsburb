@@ -114,12 +114,14 @@ void print_patch(patch_t patch) {
   uint16_t *chain_lengths = malloc(chain_count * sizeof(uint16_t));
   printf("== Patch with %u atoms in %u chains, taking %u bytes.\n",
          patch_length_atoms(patch), chain_count, length_bytes);
+
   /* Read chain lengths */
   for (uint32_t chain = 0; chain < chain_count; chain++) {
     uint16_t len_atoms = 0; uint32_t offset = 0;
     READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
     chain_lengths[chain] = len_atoms;
   }
+
   /* Print each chain */
   for (uint32_t chain = 0; chain < chain_count; chain++) {
     printf("* Chain %u (%u atoms)\n", chain, chain_lengths[chain]);
@@ -135,7 +137,72 @@ void print_patch(patch_t patch) {
   printf("END OF PATCH\n\n");
   free(chain_lengths);
 }
+
+/* Return an id on which a patch is blocking, or 0 if the patch is ready to be
+   applied, or 1 if the patch contains duplicate atoms and should simply be
+   rejected. You must handle each of these cases!
+
+   Checks for predecessors of head atoms on insertion chains, and all atoms of
+   other types of chains. Checks for first atom in patch being immediately above
+   the weft. */
+uint64_t patch_blocking_id(patch_t patch, weft_t weft) {
+  uint64_t id, pred; uint32_t c;
+  uint32_t *p32 = patch; void *ptr = patch;
+  uint32_t length_bytes; uint8_t chain_count;
+  READ_PATCH_HEADER(length_bytes, chain_count, ptr); p32 = ptr;
+  uint16_t *chain_lengths = malloc(chain_count * sizeof(uint16_t));
+
+  /* Read chain lengths */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    uint16_t len_atoms = 0; uint32_t offset = 0;
+    READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
+    chain_lengths[chain] = len_atoms;
+  }
   
+  /* Check that first atom is directly above weft */
+  READ_ATOM_SEQ(id, pred, c, p32); p32 -= 5; /* peek */
+  if (weft_get(weft, YARN(id)) + 1 != OFFSET(id)) {
+    //printf("XX  First atom is not directly above weft\n");
+    free(chain_lengths);
+    if (weft_covers(weft, id)) return 1;
+    else return PACK_ID(YARN(id), OFFSET(id) - 1);
+  }
+
+  /* Go through each chain, and check for predecessors, as well as all atoms
+     being above the weft. */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    READ_ATOM_SEQ(id, pred, c, p32); p32 -= 5; /* peek */
+    int inschain = ATOM_CHAR_IS_VISIBLE(c); /* is this an insertion chain? */
+    if (inschain && !weft_covers(weft, pred)) {
+      //printf("XX  Insertion chain %u blocking on pred\n", chain);
+      free(chain_lengths);
+      return pred;
+    }
+
+    for (uint16_t i = 0; i < chain_lengths[chain]; i++) {
+      READ_ATOM_SEQ(id, pred, c, p32);
+      /* Check predecessors of non-insertion atoms */
+      if (!inschain && !weft_covers(weft, pred)) {
+        //printf("XX  Non-insertion chain %u blocking on pred\n", chain);
+        free(chain_lengths);
+        return pred;
+      }
+
+      /* Check to make sure atoms are above weft */
+      if (weft_covers(weft, id)) {
+        //printf("XX  Atom (%u,%u) not above weft\n", YARN(id), OFFSET(id));
+        free(chain_lengths);
+        return 1;
+      }
+    }
+  }
+
+  free(chain_lengths);
+  return 0;
+}
+      
+
+/******************************** Testing code ********************************/
 
 int main(void) {
   /* Patch 1: Alice types "Test" */
@@ -183,8 +250,43 @@ int main(void) {
   assert(patch_length_atoms(patch3) == 1);
 
   printf("Patch 3: Alice saves awareness of Bob's patches\n");
-  print_patch(patch3);  
+  print_patch(patch3);
 
+  /* Check to see which patches are ready to be applied. */
+  weft_t weft0 = new_weft();
+  weft_t weft1 = quickweft("a4");
+  weft_t weft2 = quickweft("a4b2");
+  weft_t weft3 = quickweft("a5b2");
+  printf("USING WEFT 0\n");
+  uint64_t bid = patch_blocking_id(patch1, weft0);
+  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch2, weft0);
+  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch3, weft0);
+  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  printf("USING WEFT 1\n");
+  bid = patch_blocking_id(patch1, weft1);
+  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch2, weft1);
+  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch3, weft1);
+  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  printf("USING WEFT 2\n");
+  bid = patch_blocking_id(patch1, weft2);
+  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch2, weft2);
+  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch3, weft2);
+  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  printf("USING WEFT 3\n");
+  bid = patch_blocking_id(patch1, weft3);
+  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch2, weft3);
+  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+  bid = patch_blocking_id(patch3, weft3);
+  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+
+  delete_weft(weft0); delete_weft(weft1); delete_weft(weft2); delete_weft(weft3);
   free(patch1); free(patch2); free(patch3);
   return 0;
 }
