@@ -135,8 +135,10 @@ typedef Pvoid_t waiting_set_t;
 
 waiting_set_t new_waiting_set(void);
 void delete_waiting_set(waiting_set_t wset, int delete_patches);
+vector_t take_waiting_set(waiting_set_t *wset, uint64_t id);
 int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch);
 int waiting_set_empty(waiting_set_t wset);
+void print_waiting_set(waiting_set_t wset);
 
 /* Safer deletor macro. Sets pointer to NULL afterward. */
 #define DELETE_WAITING_SET(wset, delete_patches) do {                     \

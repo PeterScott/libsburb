@@ -72,7 +72,7 @@
    <chain1-offset-len: uint32_t, uint16_t>, <chain2-offset-len: uint32_t, uint16_t>, ...
    [MARK]<atoms of chain1><atoms of chain2> ...
    
-* TODO Write waiting-set data type (waitingset_t)
+* DONE Write waiting-set data type (waitingset_t)
   Waiting sets. Maps from ids to vectors of pointers to patches blocking on that
   id. Yeah, it's kind of irritatingly complicated.
 
@@ -84,7 +84,7 @@
 
   The rest of the mapping is done with JudyL arrays.
 
-** TODO Write function to get waiting set for an id, removing it from the dict.
+** DONE Write function to get waiting set for an id, removing it from the dict.
    Removal *must* remove empty inner judys.
 ** DONE Write function to tell if waiting set is empty
 
