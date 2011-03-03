@@ -163,6 +163,7 @@ uint32_t patch_length_bytes(patch_t patch);
 uint8_t patch_chain_count(patch_t patch);
 uint32_t patch_length_atoms(patch_t patch);
 void *patch_atoms(patch_t patch);
+size_t patch_atom_size_bytes(patch_t patch);
 uint32_t patch_necessary_buffer_length(uint8_t chain_count, uint32_t atom_count);
 void write_patch_header(void **dest, uint32_t length_bytes, uint8_t chain_count);
 void write_chain_descriptor(void **dest, uint32_t offset, uint16_t len_atoms);

@@ -59,6 +59,12 @@ inline void *patch_atoms(patch_t patch) {
   return ptr;
 }
 
+/* Return the number of bytes by which a weave would have to expand in order to
+   accommodate this patch. */
+inline size_t patch_atom_size_bytes(patch_t patch) {
+  return chain_size_bytes(patch_length_atoms(patch));
+}
+
 /****************************** Writing patches *******************************/
 
 /* Return the necessary buffer length, in bytes, to hold a patch with a given
@@ -200,7 +206,6 @@ uint64_t patch_blocking_id(patch_t patch, weft_t weft) {
   free(chain_lengths);
   return 0;
 }
-
 
 /******************************** Testing code ********************************/
 
