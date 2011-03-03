@@ -89,6 +89,7 @@
 ** DONE Write function to tell if waiting set is empty
 
 * TODO Write vector weave data type (weave_t)
+* TODO Write patch validation function. See your written notes for details.
 * TODO Write patch insertion for vector weaves.
 * TODO Serialization for everything. In a stable format.
   Ponder this later.
