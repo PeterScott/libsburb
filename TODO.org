@@ -82,9 +82,10 @@
   itself. This can serve as an array of pointers, with amortized O(1) append. It
   must be freed with free() by the client code.
 
-   The rest of the mapping is done with JudyL arrays.
+  The rest of the mapping is done with JudyL arrays.
 
 ** TODO Write function to get waiting set for an id, removing it from the dict.
+   Removal *must* remove empty inner judys.
 ** TODO Write function to tell if waiting set is empty
 
 * TODO Write vector weave data type (weave_t)

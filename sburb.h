@@ -69,10 +69,25 @@
 #define ATOM_CHAR_IS_VISIBLE(c) ((c) < 0xE000 || (c) > 0xE003)
 
 
-/*********************************** Wefts ************************************/
+/******************************* Data typedefs ********************************/
 
 /* A weft_t is a pointer to the weft structure itself. */
 typedef Pvoid_t weft_t;
+
+/* A memodict is a JudyL array of JudyL arrays of wefts. */
+typedef Pvoid_t memodict_t;
+
+/* A vector is represented as an array of machine words, with the first one
+   telling the size of the array (including the first two words), the second
+   telling the number of array elements used by data, and the rest being the
+   data itself. This can serve as an array of pointers, with amortized O(1)
+   append. It must be freed with free() by the client code. */
+typedef Word_t* vector_t;
+
+/* A patch, or rather, a pointer to a patch data structure. */
+typedef void* patch_t;
+
+/*********************************** Wefts ************************************/
 
 /* Not an actual weft, but an error value. */
 #define ERRWEFT ((weft_t)(-1))
@@ -92,9 +107,6 @@ int weft_merge_into(weft_t *dest, weft_t other);
 
 /************************ Id-to-weft memoization dicts ************************/
 
-/* A memodict is a JudyL array of JudyL arrays of wefts. */
-typedef Pvoid_t memodict_t;
-
 /* Safer deletor macro. Sets pointer to NULL afterward. */
 #define DELETE_MEMODICT(md) do { delete_memodict(md); md = (memodict_t)NULL; } while (0);
 
@@ -111,13 +123,6 @@ int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 
 /************************** Waiting sets and vectors **************************/
 
-/* A vector is represented as an array of machine words, with the first one
-   telling the size of the array (including the first two words), the second
-   telling the number of array elements used by data, and the rest being the
-   data itself. This can serve as an array of pointers, with amortized O(1)
-   append. It must be freed with free() by the client code. */
-typedef Word_t* vector_t;
-
 /* Get the nth element of a vector. */
 #define VECTOR_GET(vector, n) ((vector)[(n) + 2])
 /* Get the number of elements in a vector. */
@@ -130,12 +135,15 @@ typedef Pvoid_t waiting_set_t;
 
 waiting_set_t new_waiting_set(void);
 void delete_waiting_set(waiting_set_t wset, int delete_patches);
-int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch)
+int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch);
+int waiting_set_empty(waiting_set_t wset);
+
+/* Safer deletor macro. Sets pointer to NULL afterward. */
+#define DELETE_WAITING_SET(wset, delete_patches) do {                     \
+    delete_waiting_set(wset, delete_patches); wset = (waiting_set_t)NULL; \
+  } while (0);
 
 /********************************** Patches ***********************************/
-
-/* A patch, or rather, a pointer to a patch data structure. */
-typedef void* patch_t;
 
 #define READ_PATCH_HEADER(length_bytes, chain_count, ptr) do {               \
     length_bytes = patch_length_bytes((patch_t)ptr);                         \

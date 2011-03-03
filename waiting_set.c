@@ -111,6 +111,13 @@ int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch)
   *wset = temp; return 0;
 }
 
+/* Is the waiting set empty? */
+int waiting_set_empty(waiting_set_t wset) {
+  Word_t rc_word;
+  JLC(rc_word, wset, 0, -1);
+  return rc_word == 0;
+}
+
 /********************************** Testing ***********************************/
 
 int main(void) {
@@ -119,10 +126,14 @@ int main(void) {
   patch_t patch3 = make_patch3();
   waiting_set_t wset = new_waiting_set();
 
+  assert(waiting_set_empty(wset));
+
   LIFTERR(add_to_waiting_set(&wset, PACK_ID(1, 3), patch1));
   LIFTERR(add_to_waiting_set(&wset, PACK_ID(1, 3), patch2));
   LIFTERR(add_to_waiting_set(&wset, PACK_ID(2, 2), patch3));
 
-  delete_waiting_set(wset, TRUE);
+  assert(!waiting_set_empty(wset));
+
+  DELETE_WAITING_SET(wset, TRUE);
   return 0;
 }
