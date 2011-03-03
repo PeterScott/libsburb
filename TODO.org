@@ -86,7 +86,7 @@
 
 ** TODO Write function to get waiting set for an id, removing it from the dict.
    Removal *must* remove empty inner judys.
-** TODO Write function to tell if waiting set is empty
+** DONE Write function to tell if waiting set is empty
 
 * TODO Write vector weave data type (weave_t)
 * TODO Write patch insertion for vector weaves.
