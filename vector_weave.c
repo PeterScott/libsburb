@@ -13,6 +13,7 @@ weave_t new_weave(void) {
   weave.length   = 2;
   weave.weft     = (weft_t)NULL;
   weave.memodict = (memodict_t)NULL;
+  weave.wset     = (waiting_set_t)NULL;
   uint64_t *ids  = weave.ids; uint32_t *bodies = weave.bodies;
 
   WRITE_ATOM(PACK_ID(0, 1), PACK_ID(0, 1), ATOM_CHAR_START, ids, bodies);

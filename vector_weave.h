@@ -8,6 +8,7 @@ typedef struct {
   uint32_t *bodies;             /* Array of (pred, char) pairs */
   weft_t weft;                  /* Weft covering all atoms in weave */
   memodict_t memodict;          /* Id-to-weft memoization dict */
+  waiting_set_t wset;           /* Waiting set: vectors of patches blocking on ids */
 } weave_t;
 
 #endif

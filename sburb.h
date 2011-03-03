@@ -87,6 +87,9 @@ typedef Word_t* vector_t;
 /* A patch, or rather, a pointer to a patch data structure. */
 typedef void* patch_t;
 
+/* A waiting set is a two-nested-judyl arrangement. */
+typedef Pvoid_t waiting_set_t;
+
 /*********************************** Wefts ************************************/
 
 /* Not an actual weft, but an error value. */
@@ -130,8 +133,6 @@ int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 
 vector_t new_vector(void);
 vector_t vector_append(vector_t vector, Word_t word);
-
-typedef Pvoid_t waiting_set_t;
 
 waiting_set_t new_waiting_set(void);
 void delete_waiting_set(waiting_set_t wset, int delete_patches);
