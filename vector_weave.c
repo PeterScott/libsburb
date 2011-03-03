@@ -5,12 +5,21 @@
 
 /* Allocate and return a new weave, blank but for the start and end atoms. The
    weft and memoization dicts are blank, and will work correctly, but do NOT
-   need to be de-allocated unless you modify them. */
-weave_t new_weave(void) {
+   need to be de-allocated unless you modify them.
+
+   The weave will have the capacity to store potentially more atoms than you put
+   in it. The argument capacity determines how many atoms the weave will
+   allocate space for. If it's zero, then the weave will have a default capacity
+   of 4 atoms. A capacity of 1 is invalid, and will be bumped up to the minimum
+   of 2 needed to store the start and end atoms. */
+weave_t new_weave(uint32_t capacity) {
   weave_t weave;
-  weave.ids      = malloc(2*sizeof(uint64_t));
-  weave.bodies   = malloc(6*sizeof(uint32_t));
+  if (capacity == 0) capacity = 4;
+  if (capacity == 1) capacity = 2;
+  weave.ids      = malloc(capacity * sizeof(uint64_t));
+  weave.bodies   = malloc(capacity * 3 * sizeof(uint32_t));
   weave.length   = 2;
+  weave.capacity = capacity;
   weave.weft     = (weft_t)NULL;
   weave.memodict = (memodict_t)NULL;
   weave.wset     = (waiting_set_t)NULL;
@@ -24,6 +33,9 @@ weave_t new_weave(void) {
 /* Delete a weave, and free its memory. */
 void delete_weave(weave_t weave) {
   free(weave.ids); free(weave.bodies);
+  delete_weft(weave.weft);
+  delete_memodict(weave.memodict);
+  delete_waiting_set(weave.wset, TRUE);
 }
 
 /* Print a weave, for debugging. Not a concise format! */
