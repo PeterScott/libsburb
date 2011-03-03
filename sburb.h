@@ -16,6 +16,9 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+#define TRUE  1
+#define FALSE 0
+
 /*********************** Serialization/deserialization ************************/
 
 /* Yarn and offset getters, for atom ids. */
@@ -106,6 +109,29 @@ int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 #include "vector_weave.h"
 
 
+/************************** Waiting sets and vectors **************************/
+
+/* A vector is represented as an array of machine words, with the first one
+   telling the size of the array (including the first two words), the second
+   telling the number of array elements used by data, and the rest being the
+   data itself. This can serve as an array of pointers, with amortized O(1)
+   append. It must be freed with free() by the client code. */
+typedef Word_t* vector_t;
+
+/* Get the nth element of a vector. */
+#define VECTOR_GET(vector, n) ((vector)[(n) + 2])
+/* Get the number of elements in a vector. */
+#define VECTOR_LEN(vector) ((vector)[1])
+
+vector_t new_vector(void);
+vector_t vector_append(vector_t vector, Word_t word);
+
+typedef Pvoid_t waiting_set_t;
+
+waiting_set_t new_waiting_set(void);
+void delete_waiting_set(waiting_set_t wset, int delete_patches);
+int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch)
+
 /********************************** Patches ***********************************/
 
 /* A patch, or rather, a pointer to a patch data structure. */
@@ -140,6 +166,10 @@ uint64_t patch_blocking_id(patch_t patch, weft_t weft);
 
 weft_t quickweft(const char *str);
 void quickweft_print(weft_t weft);
+
+patch_t make_patch1(void);
+patch_t make_patch2(void);
+patch_t make_patch3(void);
 
 #endif
 

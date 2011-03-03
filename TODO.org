@@ -73,6 +73,20 @@
    [MARK]<atoms of chain1><atoms of chain2> ...
    
 * TODO Write waiting-set data type (waitingset_t)
+  Waiting sets. Maps from ids to vectors of pointers to patches blocking on that
+  id. Yeah, it's kind of irritatingly complicated.
+
+  A vector is represented as an array of machine words, with the first one
+  telling the size of the array (including the first two words), the second
+  telling the number of array elements used by data, and the rest being the data
+  itself. This can serve as an array of pointers, with amortized O(1) append. It
+  must be freed with free() by the client code.
+
+   The rest of the mapping is done with JudyL arrays.
+
+** TODO Write function to get waiting set for an id, removing it from the dict.
+** TODO Write function to tell if waiting set is empty
+
 * TODO Write vector weave data type (weave_t)
 * TODO Write patch insertion for vector weaves.
 * TODO Serialization for everything. In a stable format.

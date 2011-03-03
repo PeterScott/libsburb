@@ -204,8 +204,10 @@ uint64_t patch_blocking_id(patch_t patch, weft_t weft) {
 
 /******************************** Testing code ********************************/
 
-int main(void) {
-  /* Patch 1: Alice types "Test" */
+#ifdef DEBUG
+
+/* Patch 1: Alice types "Test" */
+patch_t make_patch1(void) {
   void *patch1, *patch1_cursor;
   uint32_t patch1_len = patch_necessary_buffer_length(1, 4);
   patch1 = malloc(patch1_len); patch1_cursor = patch1;
@@ -218,75 +220,95 @@ int main(void) {
   WRITE_ATOM_SEQ(PACK_ID(1,4), PACK_ID(1,3), 't', p32);
   assert((uint8_t*)p32 - (uint8_t*)patch1 == patch1_len);
   assert(patch_length_atoms(patch1) == 4);
+  return patch1;
+}
 
-  printf("Patch 1: Alice types 'Test'\n");
-  print_patch(patch1);
-
-  /* Patch 2: Bob deletes 's', inserts 'x' */
+/* Patch 2: Bob deletes 's', inserts 'x' */
+patch_t make_patch2(void) {
   void *patch2, *patch2_cursor;
   uint32_t patch2_len = patch_necessary_buffer_length(2, 2);
   patch2 = malloc(patch2_len); patch2_cursor = patch2;
   write_patch_header(&patch2_cursor, patch2_len, 2);
   write_chain_descriptor(&patch2_cursor, 0, 1);
   write_chain_descriptor(&patch2_cursor, chain_size_bytes(1), 1);
-  p32 = patch2_cursor;
+  uint32_t *p32 = patch2_cursor;
   WRITE_ATOM_SEQ(PACK_ID(2,1), PACK_ID(1,3), ATOM_CHAR_DEL, p32);
   WRITE_ATOM_SEQ(PACK_ID(2,2), PACK_ID(1,2), 'x', p32);
   assert((uint8_t*)p32 - (uint8_t*)patch2 == patch2_len);
   assert(patch_length_atoms(patch2) == 2);
+  return patch2;
+}
 
-  printf("Patch 2: Bob deletes 's', inserts 'x'\n");
-  print_patch(patch2);
-
-  /* Patch 3: Alice saves awareness of Bob's patches */
+/* Patch 3: Alice saves awareness of Bob's patches */
+patch_t make_patch3(void) {
   void *patch3, *patch3_cursor;
   uint32_t patch3_len = patch_necessary_buffer_length(1, 1);
   patch3 = malloc(patch3_len); patch3_cursor = patch3;
   write_patch_header(&patch3_cursor, patch3_len, 1);
   write_chain_descriptor(&patch3_cursor, 0, 1);
-  p32 = patch3_cursor;
+  uint32_t *p32 = patch3_cursor;
   WRITE_ATOM_SEQ(PACK_ID(1,5), PACK_ID(2,2), ATOM_CHAR_SAVE, p32);
   assert((uint8_t*)p32 - (uint8_t*)patch3 == patch3_len);
   assert(patch_length_atoms(patch3) == 1);
-
-  printf("Patch 3: Alice saves awareness of Bob's patches\n");
-  print_patch(patch3);
-
-  /* Check to see which patches are ready to be applied. */
-  weft_t weft0 = new_weft();
-  weft_t weft1 = quickweft("a4");
-  weft_t weft2 = quickweft("a4b2");
-  weft_t weft3 = quickweft("a5b2");
-  printf("USING WEFT 0\n");
-  uint64_t bid = patch_blocking_id(patch1, weft0);
-  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch2, weft0);
-  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch3, weft0);
-  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  printf("USING WEFT 1\n");
-  bid = patch_blocking_id(patch1, weft1);
-  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch2, weft1);
-  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch3, weft1);
-  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  printf("USING WEFT 2\n");
-  bid = patch_blocking_id(patch1, weft2);
-  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch2, weft2);
-  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch3, weft2);
-  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  printf("USING WEFT 3\n");
-  bid = patch_blocking_id(patch1, weft3);
-  printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch2, weft3);
-  printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-  bid = patch_blocking_id(patch3, weft3);
-  printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
-
-  delete_weft(weft0); delete_weft(weft1); delete_weft(weft2); delete_weft(weft3);
-  free(patch1); free(patch2); free(patch3);
-  return 0;
+  return patch3;
 }
+
+#endif
+
+// int main(void) {
+//   /* Patch 1: Alice types "Test" */
+//   void *patch1 = make_patch1();
+// 
+//   printf("Patch 1: Alice types 'Test'\n");
+//   print_patch(patch1);
+// 
+//   /* Patch 2: Bob deletes 's', inserts 'x' */
+//   void *patch2 = make_patch2();
+// 
+//   printf("Patch 2: Bob deletes 's', inserts 'x'\n");
+//   print_patch(patch2);
+// 
+//   /* Patch 3: Alice saves awareness of Bob's patches */
+//   void *patch3 = make_patch3();
+// 
+//   printf("Patch 3: Alice saves awareness of Bob's patches\n");
+//   print_patch(patch3);
+// 
+//   /* Check to see which patches are ready to be applied. */
+//   weft_t weft0 = new_weft();
+//   weft_t weft1 = quickweft("a4");
+//   weft_t weft2 = quickweft("a4b2");
+//   weft_t weft3 = quickweft("a5b2");
+//   printf("USING WEFT 0\n");
+//   uint64_t bid = patch_blocking_id(patch1, weft0);
+//   printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch2, weft0);
+//   printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch3, weft0);
+//   printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   printf("USING WEFT 1\n");
+//   bid = patch_blocking_id(patch1, weft1);
+//   printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch2, weft1);
+//   printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch3, weft1);
+//   printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   printf("USING WEFT 2\n");
+//   bid = patch_blocking_id(patch1, weft2);
+//   printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch2, weft2);
+//   printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch3, weft2);
+//   printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   printf("USING WEFT 3\n");
+//   bid = patch_blocking_id(patch1, weft3);
+//   printf("Patch 1 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch2, weft3);
+//   printf("Patch 2 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+//   bid = patch_blocking_id(patch3, weft3);
+//   printf("Patch 3 blocking on %llu (%u, %u)\n", bid, YARN(bid), OFFSET(bid));
+// 
+//   delete_weft(weft0); delete_weft(weft1); delete_weft(weft2); delete_weft(weft3);
+//   free(patch1); free(patch2); free(patch3);
+//   return 0;
+// }

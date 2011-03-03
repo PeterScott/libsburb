@@ -7,5 +7,5 @@ env = DefaultEnvironment(CCFLAGS='-g -Wall -std=gnu99 -pedantic -DDEBUG',
                          LIBPATH='.:'+os.environ['LIBRARY_PATH'])
 
 #Library('sburb', Split('memodict.c weft.c'))
-Program('sburb', Split('memodict.c weft.c patch.c'), LIBS='Judy')
+Program('sburb', Split('memodict.c weft.c patch.c waiting_set.c'), LIBS='Judy')
 # FIXME: add vector_weave.c back in later.
