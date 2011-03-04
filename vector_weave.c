@@ -250,7 +250,7 @@ void delete_deldict(deldict_t deldict) {
 
 /* Allocate an insrec with a given chain and number of atoms in the chain. Has no
    overhead over making it manually. Must be freed by the user. */
-inline insrec_t *make_insrec(void *chain, uint16_t len_atoms) {
+static inline insrec_t *make_insrec(void *chain, uint16_t len_atoms) {
   insrec_t *insrec = malloc(sizeof(insrec_t));
   insrec->chain = chain; insrec->len_atoms = len_atoms;
   return insrec;
@@ -285,7 +285,7 @@ int main(void) {
   w = apply_insvec(w, insvec, 5); free(insvec);
   weave_print(w);
 
-  /* Look at indel dicts */
+  /* Look at deldicts */
   deldict_t deldict = NULL;
   LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 22), (void*)22242));
   LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 18), (void*)21842));
@@ -296,6 +296,19 @@ int main(void) {
   printf("(5,55) => %li\n", (long)indeldict_get(deldict, PACK_ID(5, 55)));
 
   delete_deldict(deldict);
+
+  /* Look at insdicts */
+  insdict_t insdict = NULL;
+  LIFTERR(indeldict_insert(&insdict, PACK_ID(2, 22), make_insrec((void*)22242, 111)));
+  LIFTERR(indeldict_insert(&insdict, PACK_ID(2, 18), make_insrec((void*)21842, 222)));
+  LIFTERR(indeldict_insert(&insdict, PACK_ID(5, 55), make_insrec((void*)55542, 333)));
+  
+  printf("(2,22) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(2, 22)))->chain));
+  printf("(2,18) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(2, 18)))->chain));
+  printf("(5,55) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(5, 55)))->chain));
+
+  delete_insdict(insdict);
+
   delete_weave(w);
   free(patch1); free(patch2); free(patch3);
   return 0;
