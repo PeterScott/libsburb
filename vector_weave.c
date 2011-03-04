@@ -268,7 +268,7 @@ int main(void) {
   weave_print(w);
 
   patch_t patch1 = make_patch1();
-  //patch_t patch2 = make_patch2();
+  patch_t patch2 = make_patch2();
   patch_t patch3 = make_patch3();
 
   void *chain1 = patch_atoms(patch1);
@@ -282,7 +282,7 @@ int main(void) {
   insvec = vector_append(insvec, 1);
   insvec = vector_append(insvec, (Word_t)chain3);
   
-  w = apply_insvec(w, insvec, 5);
+  w = apply_insvec(w, insvec, 5); free(insvec);
   weave_print(w);
 
   /* Look at indel dicts */
@@ -295,6 +295,8 @@ int main(void) {
   printf("(2,18) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 18)));
   printf("(5,55) => %li\n", (long)indeldict_get(deldict, PACK_ID(5, 55)));
 
+  delete_deldict(deldict);
   delete_weave(w);
+  free(patch1); free(patch2); free(patch3);
   return 0;
 }
