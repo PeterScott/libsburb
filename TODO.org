@@ -88,9 +88,14 @@
    Removal *must* remove empty inner judys.
 ** DONE Write function to tell if waiting set is empty
 
-* TODO Write vector weave data type (weave_t)
+* DONE Write vector weave data type (weave_t)
 * TODO Write patch validation function. See your written notes for details.
 * TODO Write patch insertion for vector weaves.
+  First, check to see if the patch can be cleanly inserted. If the answer is no,
+  stick it in the waiting set. Otherwise, continue.
+
+  Build a two-level JudyL mapping from ids to delatoms, and another mapping
+  from ids to structs containing a non-sticky chain pointer and its length.
 ** DONE Write apply_insvec to apply insertion vectors.
    An insertion vector is a vector_t of alternating index, chain_length, and
    chain* words. All indices are in ascending order.

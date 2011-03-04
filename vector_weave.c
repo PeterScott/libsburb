@@ -53,6 +53,9 @@ void weave_print(weave_t weave) {
   printf("\n");
 }
 
+
+/***************************** Insertion vectors ******************************/
+
 /* Take a weave and a vector of alternating index, chain_len, chain* words, and insert
    those atoms into the weave, in-place. Does not modify weft. */
 weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count) {
@@ -142,6 +145,122 @@ weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count) {
     return apply_insvec_alloc(weave, insvec, atom_count);
 }
 
+
+/************************** Predecessor lookup dicts **************************/
+
+/* A predecessor lookup dict is one of two types of JudyL arrays. A deldict maps
+   from ids to deletion atoms. An insdict maps from ids to insrecs. An insrec
+   contains a pointer to a chain, and the chain length. These things are used in
+   the patch insertion process; constructed during a preprocessing phase and
+   then used during a one-pass traversal of the weave. */
+
+typedef Pvoid_t deldict_t;
+typedef Pvoid_t insdict_t;
+typedef struct {
+  void *chain;
+  uint16_t len_atoms;
+} insrec_t;
+
+/* Insert a pointer to a thing into either an insdict or a deldict. The thing
+   should be either an atom (for deldicts) or an insrec (for insdicts). */
+int indeldict_insert(Pvoid_t *dict, uint64_t id, void *thing) {
+  Word_t index_outer; Word_t *pvalue_outer;
+  Word_t index_inner; Word_t *pvalue_inner;
+  Pvoid_t inner_judy;           /* Inner judy arrays */
+  waiting_set_t temp = *dict;
+
+  index_outer = YARN(id); JLI(pvalue_outer, temp, index_outer);
+  if (pvalue_outer == PJERR) return -1; /* malloc() error */
+  if (*pvalue_outer == 0) {
+    inner_judy = (Pvoid_t)NULL; index_inner = OFFSET(id);
+  } else {
+    inner_judy = (Pvoid_t)*pvalue_outer; index_inner = OFFSET(id);
+  }
+
+  JLI(pvalue_inner, inner_judy, index_inner);
+  if (pvalue_inner == PJERR) return -1; /* malloc() error */
+  *pvalue_inner = (Word_t)thing;
+  *pvalue_outer = (Word_t)inner_judy;
+  *dict = temp; return 0;
+}
+
+/* Get the thing corresponding to the given id in an insdict or deldict. Returns
+   NULL if nothing was found corresponding to that id. */
+void *indeldict_get(Pvoid_t dict, uint64_t id) {
+  Word_t index_outer; Word_t *pvalue_outer;
+  Word_t index_inner; Word_t *pvalue_inner;
+  Pvoid_t inner_judy;
+
+  /* Look up the yarn */
+  if (dict == NULL) return NULL; /* common case: empty set */
+  index_outer = YARN(id); JLG(pvalue_outer, dict, index_outer);
+  if (pvalue_outer == PJERR) return NULL; /* malloc() error */
+  if (pvalue_outer == NULL) return NULL;  /* yarn not found */
+  
+  /* Yarn found. Look up the offset. */
+  inner_judy = (Pvoid_t)*pvalue_outer; index_inner = OFFSET(id);
+  JLG(pvalue_inner, inner_judy, index_inner);
+  if (pvalue_inner == PJERR) return NULL; /* malloc() error */
+  if (pvalue_inner == NULL) return NULL;  /* offset not found */
+  
+  /* Id found. Return thing. */
+  return (void *)*pvalue_inner;
+}
+
+/* Delete an insdict, de-allocating all insrecs in it. */
+void delete_insdict(insdict_t insdict) {
+  Word_t index_outer; Word_t *pvalue_outer;
+  Word_t index_inner; Word_t *pvalue_inner;
+  Pvoid_t inner_judy; Word_t rc_word;
+
+  /* Traverse the outer JudyL */
+  index_outer = 0;
+  JLF(pvalue_outer, insdict, index_outer);
+  while (pvalue_outer != NULL) {
+    inner_judy = (Pvoid_t)*pvalue_outer;
+    /* Traverse the inner JudyL, freeing insrecs */
+    index_inner = 0;
+    JLF(pvalue_inner, inner_judy, index_inner);
+    while (pvalue_inner != NULL) {
+      free((void *)*pvalue_inner);
+      JLN(pvalue_inner, inner_judy, index_inner);
+    }
+    /* Free the inner JudyL, and proceed to the next one */
+    JLFA(rc_word, inner_judy);
+    JLN(pvalue_outer, insdict, index_outer);
+  }
+  JLFA(rc_word, insdict);
+}
+
+/* Delete a deldict. */
+void delete_deldict(deldict_t deldict) {
+  Word_t index_outer; Word_t *pvalue_outer;
+  Pvoid_t inner_judy; Word_t rc_word;
+
+  /* Traverse the outer JudyL */
+  index_outer = 0;
+  JLF(pvalue_outer, deldict, index_outer);
+  while (pvalue_outer != NULL) {
+    inner_judy = (Pvoid_t)*pvalue_outer;
+    JLFA(rc_word, inner_judy);
+    JLN(pvalue_outer, deldict, index_outer);
+  }
+  JLFA(rc_word, deldict);
+}
+
+/* Allocate an insrec with a given chain and number of atoms in the chain. Has no
+   overhead over making it manually. Must be freed by the user. */
+inline insrec_t *make_insrec(void *chain, uint16_t len_atoms) {
+  insrec_t *insrec = malloc(sizeof(insrec_t));
+  insrec->chain = chain; insrec->len_atoms = len_atoms;
+  return insrec;
+}
+
+/****************************** Applying patches ******************************/
+
+// FIXME: see notes in TODO.org
+
+
 /********************************** Testing ***********************************/
 
 int main(void) {
@@ -165,6 +284,16 @@ int main(void) {
   
   w = apply_insvec(w, insvec, 5);
   weave_print(w);
+
+  /* Look at indel dicts */
+  deldict_t deldict = NULL;
+  LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 22), (void*)22242));
+  LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 18), (void*)21842));
+  LIFTERR(indeldict_insert(&deldict, PACK_ID(5, 55), (void*)55542));
+
+  printf("(2,22) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 22)));
+  printf("(2,18) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 18)));
+  printf("(5,55) => %li\n", (long)indeldict_get(deldict, PACK_ID(5, 55)));
 
   delete_weave(w);
   return 0;
