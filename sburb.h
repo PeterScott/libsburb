@@ -59,6 +59,22 @@
     *ptr++ = c;                               \
   } while (0);
 
+/* Read an atom from a location, plus an atom offset. Pass in only variable
+   names. Pointers are not modified. */
+#define READ_ATOM_IDX(id, pred, c, id_ptr, body_ptr, i) do {  \
+    id = *(id_ptr + (i));                                     \
+    pred = *(uint64_t*)(body_ptr + 3*(i));                    \
+    c = *(body_ptr + 3*(i) + 2);                              \
+  } while (0);
+
+/* Write an atom to a location, plus an atom offset. Pass in only variable
+   names. Pointers are not modified. */
+#define WRITE_ATOM_IDX(id, pred, c, id_ptr, body_ptr, i) do { \
+    *(id_ptr + (i)) = id;                                     \
+    *(uint64_t*)(body_ptr + 3*(i)) = pred;                    \
+    *(body_ptr + 3*(i) + 2) = c;                              \
+  } while (0);
+
 /* The four special atom characters. These are the only invisible chars. */
 #define ATOM_CHAR_START 0xE000
 #define ATOM_CHAR_END   0xE001

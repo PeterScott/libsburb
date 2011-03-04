@@ -50,12 +50,90 @@ void weave_print(weave_t weave) {
     if (c < 128) printf("%c>\n", (char)c);
     else printf("0x%X>\n", c);
   }
+  printf("\n");
+}
+
+/* Take a weave and a vector of alternating index, chain_len, chain* words, and insert
+   those atoms into the weave, in-place. Does not modify weft. */
+weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count) {
+  int displacement = atom_count; /* How far to move items to the right */
+  int vec_len = (int)VECTOR_LEN(insvec); /* Remaining length of insertion vector */
+  Word_t *vec_head = insvec + 2 + vec_len - 3; /* Head of insvec pairs */
+
+  weave.length += atom_count;
+
+  for (int i = weave.length - 1; i >= 0; i--) {
+    uint64_t id, pred; uint32_t c;
+    //printf("\ni = %i, displacement = %i\n", i, displacement);
+    //printf("vec_head[0] = %i, i - displacement+1 = %i\n",
+    //       vec_len > 0 ? (int)vec_head[0] : 69, i - displacement+1);
+    if (vec_len > 0 && i - displacement + 1 == (int)vec_head[0]) {
+      int chain_len = (int)vec_head[1];
+      void *chain = (void *)vec_head[2];
+      uint32_t *ptr = chain;
+      // Copy over the chain.
+      for (int j = i - chain_len + 1; j <= i; j++) {
+        //printf("Copying from %i to %i\t[i=%i]\n", removeme, j, i);
+        READ_ATOM_SEQ(id, pred, c, ptr);
+        //printf("COPY id: %llu, pred: %llu, c: %u\n", id, pred, c);
+        WRITE_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, j);
+      }
+      i -= chain_len; i++; displacement -= chain_len;
+      vec_len -= 3; vec_head -= 3;
+    } else {
+      //printf("Moving from %i to %i\n", i - displacement, i);
+      READ_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, i - displacement);
+      //printf("MOVE id: %llu, pred: %llu, c: %u\n", id, pred, c);
+      WRITE_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, i);
+    }
+  }
+
+  return weave;
+}
+
+/* Take a weave and a vector of alternating index, chain* words, and insert
+   those atoms into the weave, allocating new memory to hold the atom_count new
+   atoms. Does not modify weft. */
+weave_t apply_insvec_alloc(weave_t weave, vector_t insvec, uint32_t atom_count) {
+//  uint64_t *old_ids = weave.ids; uint32_t *old_bodies = weave.bodies;
+//  weave.ids = malloc(...);
+//  uint64_t *new_ids = weave.ids; uint32_t *new_bodies = weave.bodies;
+  return weave;                 /* FIXME */
+}
+
+/* Take a weave and a vector of alternating index, chain* words, and insert
+   those atoms into the weave. You must explicitly tell this function how many
+   atoms will be inserted, so that it can allocate the right amount of
+   memory. Does not modify weft. */
+weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count) {
+  if (atom_count < weave.capacity)
+    return apply_insvec_inplace(weave, insvec, atom_count);
+  else
+    return apply_insvec_alloc(weave, insvec, atom_count);
 }
 
 /********************************** Testing ***********************************/
 
 int main(void) {
-  weave_t w = new_weave();
+  weave_t w = new_weave(32);
+  weave_print(w);
+
+  patch_t patch1 = make_patch1();
+  //patch_t patch2 = make_patch2();
+  patch_t patch3 = make_patch3();
+
+  void *chain1 = patch_atoms(patch1);
+  void *chain3 = patch_atoms(patch3);
+  
+  vector_t insvec = new_vector();
+  insvec = vector_append(insvec, 1);
+  insvec = vector_append(insvec, 4);
+  insvec = vector_append(insvec, (Word_t)chain1);
+  insvec = vector_append(insvec, 2);
+  insvec = vector_append(insvec, 1);
+  insvec = vector_append(insvec, (Word_t)chain3);
+  
+  w = apply_insvec_inplace(w, insvec, 5);
   weave_print(w);
 
   delete_weave(w);
