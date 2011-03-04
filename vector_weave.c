@@ -67,14 +67,14 @@ weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count
     //printf("\ni = %i, displacement = %i\n", i, displacement);
     //printf("vec_head[0] = %i, i - displacement+1 = %i\n",
     //       vec_len > 0 ? (int)vec_head[0] : 69, i - displacement+1);
+    if (vec_len == 0) break;
     if (vec_len > 0 && i - displacement + 1 == (int)vec_head[0]) {
       int chain_len = (int)vec_head[1];
-      void *chain = (void *)vec_head[2];
-      uint32_t *ptr = chain;
+      uint32_t *chain = (uint32_t *)vec_head[2];
       // Copy over the chain.
       for (int j = i - chain_len + 1; j <= i; j++) {
         //printf("Copying from %i to %i\t[i=%i]\n", removeme, j, i);
-        READ_ATOM_SEQ(id, pred, c, ptr);
+        READ_ATOM_SEQ(id, pred, c, chain);
         //printf("COPY id: %llu, pred: %llu, c: %u\n", id, pred, c);
         WRITE_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, j);
       }
@@ -95,10 +95,40 @@ weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count
    those atoms into the weave, allocating new memory to hold the atom_count new
    atoms. Does not modify weft. */
 weave_t apply_insvec_alloc(weave_t weave, vector_t insvec, uint32_t atom_count) {
-//  uint64_t *old_ids = weave.ids; uint32_t *old_bodies = weave.bodies;
-//  weave.ids = malloc(...);
-//  uint64_t *new_ids = weave.ids; uint32_t *new_bodies = weave.bodies;
-  return weave;                 /* FIXME */
+  int vec_len = (int)VECTOR_LEN(insvec); /* Remaining length of insertion vector */
+  Word_t *vec_head = insvec + 2; /* Head of insvec pairs */
+  /* Old value variables */
+  uint64_t *old_ids = weave.ids; uint32_t *old_bodies = weave.bodies;
+  void *old_ids_head = weave.ids; void *old_bodies_head = weave.bodies;
+  weave.length += atom_count;
+  
+  /* Allocate new weave vectors. New capacity is lowest power of two greater
+     than length; e.g. if weave.length is 21, then capacity will be 32. */
+  weave.capacity = (uint32_t)pow(2.0, ceil(log2((double)weave.length)));
+  weave.ids      = malloc(weave.capacity * sizeof(uint64_t));
+  weave.bodies   = malloc(weave.capacity * 3 * sizeof(uint32_t));
+  uint64_t *new_ids = weave.ids; uint32_t *new_bodies = weave.bodies;
+  
+  /* Copy items, inserting chains in their proper places. */
+  for (int i = 0, k = 0; i < weave.length; i++) {
+    uint64_t id, pred; uint32_t c; /* Current atom */
+    if (vec_len > 0 && k == (int)vec_head[0]) { /* chain here */
+      int chain_len = (int)vec_head[1]; uint32_t *chain = (uint32_t *)vec_head[2];
+      for (int j = 0; j < chain_len; j++) {
+        READ_ATOM_SEQ(id, pred, c, chain);
+        WRITE_ATOM(id, pred, c, new_ids, new_bodies);
+      }
+      i += chain_len - 1;
+      vec_len -= 3; vec_head += 3;
+    } else {
+      READ_ATOM(id, pred, c, old_ids, old_bodies);
+      WRITE_ATOM(id, pred, c, new_ids, new_bodies);
+      k++;
+    }
+  }
+
+  free(old_ids_head); free(old_bodies_head);
+  return weave;
 }
 
 /* Take a weave and a vector of alternating index, chain* words, and insert
@@ -115,7 +145,7 @@ weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count) {
 /********************************** Testing ***********************************/
 
 int main(void) {
-  weave_t w = new_weave(32);
+  weave_t w = new_weave(40);
   weave_print(w);
 
   patch_t patch1 = make_patch1();
@@ -133,7 +163,7 @@ int main(void) {
   insvec = vector_append(insvec, 1);
   insvec = vector_append(insvec, (Word_t)chain3);
   
-  w = apply_insvec_inplace(w, insvec, 5);
+  w = apply_insvec(w, insvec, 5);
   weave_print(w);
 
   delete_weave(w);

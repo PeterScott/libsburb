@@ -91,9 +91,11 @@
 * TODO Write vector weave data type (weave_t)
 * TODO Write patch validation function. See your written notes for details.
 * TODO Write patch insertion for vector weaves.
-** TODO Write apply_insvec to apply insertion vectors.
+** DONE Write apply_insvec to apply insertion vectors.
    An insertion vector is a vector_t of alternating index, chain_length, and
    chain* words. All indices are in ascending order.
+*** DONE Write apply_insvec_alloc
+*** DONE Write apply_insvec_inplace
 * TODO Serialization for everything. In a stable format.
   Ponder this later.
 
