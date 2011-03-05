@@ -211,6 +211,9 @@ patch_t make_patch1(void);
 patch_t make_patch2(void);
 patch_t make_patch3(void);
 
+void print_judyl(Pvoid_t judy);
+void print_judyl2(Pvoid_t judy);
+
 #endif
 
 

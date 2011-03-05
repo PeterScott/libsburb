@@ -90,6 +90,21 @@
 
 * DONE Write vector weave data type (weave_t)
 * TODO Write patch validation function. See your written notes for details.
+  - There must be a maximum of one save-awareness chain in the patch.
+  - No start or end atoms are allowed.
+  - A patch's atoms must all have the same yarn, and be in sequence.
+  - An insertion chain's atoms must have the previous atom as the predecessor,
+    except for the head atom, whose predecessor must be either from another yarn
+    or from the same yarn but with a lower offset.
+  - A deletion chain can only have predecessors outside the patch.
+  - A save-awareness chain can only have predecessors outside the patch's yarn.
+  - All chains must be of non-zero length.
+  - A chain's type can be determined by looking at its head atom, but all atoms
+    in the chain must be of that type. The checker must ensure this.
+  - The total length calculated from the chain descriptors must match the total
+    length of the patch, in bytes. This must be checked *before* you go looking
+    at the atoms, to ensure that you don't go overflowing the buffer.
+  - FIXME: transcribe written notes.
 * TODO Write patch insertion for vector weaves.
   First, check to see if the patch can be cleanly inserted. If the answer is no,
   stick it in the waiting set. Otherwise, continue.

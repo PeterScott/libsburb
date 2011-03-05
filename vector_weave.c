@@ -256,6 +256,54 @@ static inline insrec_t *make_insrec(void *chain, uint16_t len_atoms) {
   return insrec;
 }
 
+
+/************************ Making insdicts and deldicts ************************/
+
+/* Take a patch that we've previously verified is ready to apply, and make the
+   insdict and deldict for it. Takes pointers to an insdict and a deldict, which
+   should initially be empty, and modifies them. Returns 0 on success.
+
+   How this works is, it goes through all the chains in the patch. For insertion
+   chains, it creates an insrec and inserts that into insdict. For deletion
+   chains, it iterates through all the atoms and adds each one to the deldict.
+*/
+int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
+  uint32_t *p32 = patch; void *ptr = patch;
+  uint32_t length_bytes; uint8_t chain_count;
+  READ_PATCH_HEADER(length_bytes, chain_count, ptr); p32 = ptr;
+  uint16_t *chain_lengths = malloc(chain_count * sizeof(uint16_t));
+
+  /* Read chain lengths */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    uint16_t len_atoms = 0; uint32_t offset = 0;
+    READ_CHAIN_DESCRIPTOR(offset, len_atoms, p32);
+    chain_lengths[chain] = len_atoms;
+  }
+
+  /* Process each chain */
+  for (uint32_t chain = 0; chain < chain_count; chain++) {
+    uint64_t id, pred; uint32_t c;
+    READ_ATOM_SEQ(id, pred, c, p32); p32 -= 5; /* peek */
+    if (c == ATOM_CHAR_DEL) {
+      /* Deletion chain. Add deletors to deldict. */
+      for (uint16_t i = chain_lengths[chain]; i > 0; i--) {
+        READ_ATOM_SEQ(id, pred, c, p32);
+        LIFTERR(indeldict_insert(deldict, pred, (void*)(p32 - 5)));
+      }
+    } else if (c == ATOM_CHAR_SAVE) {
+      /* Save-awareness chain. Add to insrec for end atom. */
+      LIFTERR(indeldict_insert(insdict, PACK_ID(0,2),
+                               (void*)make_insrec((void*)p32, chain_lengths[chain])));
+    } else {
+      /* Regular insertion chain. Create insrec and add to insdict. */
+      LIFTERR(indeldict_insert(insdict, pred,
+                               (void*)make_insrec((void*)p32, chain_lengths[chain])));
+    }
+  }
+  free(chain_lengths);
+  return 0;
+}
+
 /****************************** Applying patches ******************************/
 
 // FIXME: see notes in TODO.org
@@ -308,6 +356,25 @@ int main(void) {
   printf("(5,55) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(5, 55)))->chain));
 
   delete_insdict(insdict);
+
+  /* Make insdict and deldict from patch */
+  deldict = NULL; insdict = NULL;
+  LIFTERR(make_indeldict(patch1, &insdict, &deldict));
+  print_judyl2(insdict); print_judyl2(deldict);
+  delete_insdict(insdict); delete_deldict(deldict);
+  printf("\n");
+
+  deldict = NULL; insdict = NULL;
+  LIFTERR(make_indeldict(patch2, &insdict, &deldict));
+  print_judyl2(insdict); print_judyl2(deldict);
+  delete_insdict(insdict); delete_deldict(deldict);
+  printf("\n");
+
+  deldict = NULL; insdict = NULL;
+  LIFTERR(make_indeldict(patch3, &insdict, &deldict));
+  print_judyl2(insdict); print_judyl2(deldict);
+  delete_insdict(insdict); delete_deldict(deldict);
+  printf("\n");
 
   delete_weave(w);
   free(patch1); free(patch2); free(patch3);
