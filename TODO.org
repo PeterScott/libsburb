@@ -96,11 +96,37 @@
 
   Build a two-level JudyL mapping from ids to delatoms, and another mapping
   from ids to structs containing a non-sticky chain pointer and its length.
+
+  Take this structure, and iterate a single time through the weave. For each
+  atom, look in the insdict and the deldict to see if it's a predecessor for
+  anything. If the answer is yes, then we append a new entry to the insertion
+  vector. Then just call apply_insvec to finish it off.
+
+  THEN return the yarn and the offset-range of the patch you've applied. The
+  client code should then go through all atoms in that range and get anything
+  blocking on them from the waiting set, and try to insert those newly-unblocked
+  patches. Provide a wrapper function for this.
 ** DONE Write apply_insvec to apply insertion vectors.
    An insertion vector is a vector_t of alternating index, chain_length, and
    chain* words. All indices are in ascending order.
 *** DONE Write apply_insvec_alloc
 *** DONE Write apply_insvec_inplace
+** TODO Write patch insertion code
+   Make the insdict and deldict, iterate, create insertion vector, insert,
+   return.
+** TODO Ditch complicated waiting sets, and switch to vectors of patches
+   Every time you call apply_insvec, go through waiting set and try to apply
+   patches until you either come to the end or successfully apply one. If you
+   successfully apply one, remove it from the waiting set and start over.
+
+   Note that you can do this with a JudyL mapping from sparse indices to
+   patches. This supports fast iteration and delete, with memory efficiency you
+   don't get with vectors. So do this, soon.
+** TODO Write wrapper function that applies unblocked patches
+   Apply a patch; get the range of atoms in it. Go through waiting set, and try
+   to apply the first patch in it, then the second, and so on *until one
+   succeeds.* When that happens, FIXME OR DON'T FIX ME WHATEVER
+
 * TODO Serialization for everything. In a stable format.
   Ponder this later.
 

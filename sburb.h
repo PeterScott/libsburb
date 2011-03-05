@@ -105,7 +105,10 @@ typedef Word_t* vector_t;
 typedef void* patch_t;
 
 /* A waiting set is a two-nested-judyl arrangement. */
-typedef Pvoid_t waiting_set_t;
+//typedef Pvoid_t waiting_set_t;
+
+/* Waiting set: a sparse array */
+typedef Pvoid_t waitset_t;
 
 /*********************************** Wefts ************************************/
 
@@ -151,17 +154,25 @@ int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
 vector_t new_vector(void);
 vector_t vector_append(vector_t vector, Word_t word);
 
-waiting_set_t new_waiting_set(void);
-void delete_waiting_set(waiting_set_t wset, int delete_patches);
-vector_t take_waiting_set(waiting_set_t *wset, uint64_t id);
-int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch);
-int waiting_set_empty(waiting_set_t wset);
-void print_waiting_set(waiting_set_t wset);
+/* waiting_set_t new_waiting_set(void); */
+/* void delete_waiting_set(waiting_set_t wset, int delete_patches); */
+/* vector_t take_waiting_set(waiting_set_t *wset, uint64_t id); */
+/* int add_to_waiting_set(waiting_set_t *wset, uint64_t blocking_id, patch_t patch); */
+/* int waiting_set_empty(waiting_set_t wset); */
+/* void print_waiting_set(waiting_set_t wset); */
 
-/* Safer deletor macro. Sets pointer to NULL afterward. */
-#define DELETE_WAITING_SET(wset, delete_patches) do {                     \
-    delete_waiting_set(wset, delete_patches); wset = (waiting_set_t)NULL; \
-  } while (0);
+/* /\* Safer deletor macro. Sets pointer to NULL afterward. *\/ */
+/* #define DELETE_WAITING_SET(wset, delete_patches) do {                     \ */
+/*     delete_waiting_set(wset, delete_patches); wset = (waiting_set_t)NULL; \ */
+/*   } while (0); */
+
+waitset_t new_waitset(void);
+void delete_waitset(waitset_t waitset, int delete_patches);
+int add_to_waitset(waitset_t *wset, patch_t patch);
+int waitset_empty(waitset_t wset);
+int remove_from_waitset(waitset_t *wset, int i);
+void print_waitset(waitset_t wset);
+patch_t waitset_pop(waitset_t *wset);
 
 /********************************** Patches ***********************************/
 

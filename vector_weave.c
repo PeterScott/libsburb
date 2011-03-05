@@ -22,7 +22,7 @@ weave_t new_weave(uint32_t capacity) {
   weave.capacity = capacity;
   weave.weft     = (weft_t)NULL;
   weave.memodict = (memodict_t)NULL;
-  weave.wset     = (waiting_set_t)NULL;
+  weave.wset     = (waitset_t)NULL;
   uint64_t *ids  = weave.ids; uint32_t *bodies = weave.bodies;
 
   WRITE_ATOM(PACK_ID(0, 1), PACK_ID(0, 1), ATOM_CHAR_START, ids, bodies);
@@ -35,7 +35,7 @@ void delete_weave(weave_t weave) {
   free(weave.ids); free(weave.bodies);
   delete_weft(weave.weft);
   delete_memodict(weave.memodict);
-  delete_waiting_set(weave.wset, TRUE);
+  delete_waitset(weave.wset, TRUE);
 }
 
 /* Print a weave, for debugging. Not a concise format! */
@@ -167,7 +167,7 @@ int indeldict_insert(Pvoid_t *dict, uint64_t id, void *thing) {
   Word_t index_outer; Word_t *pvalue_outer;
   Word_t index_inner; Word_t *pvalue_inner;
   Pvoid_t inner_judy;           /* Inner judy arrays */
-  waiting_set_t temp = *dict;
+  Pvoid_t temp = *dict;
 
   index_outer = YARN(id); JLI(pvalue_outer, temp, index_outer);
   if (pvalue_outer == PJERR) return -1; /* malloc() error */
