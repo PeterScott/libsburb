@@ -199,6 +199,7 @@ size_t chain_size_bytes(uint32_t atom_count);
 void write_chain(void **dest, void *src, uint32_t atom_count);
 void print_patch(patch_t patch);
 uint64_t patch_blocking_id(patch_t patch, weft_t weft);
+uint64_t patch_highest_id(patch_t patch);
 
 
 /**************************** Debugging functions *****************************/

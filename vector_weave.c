@@ -296,6 +296,7 @@ int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
                                (void*)make_insrec((void*)p32, chain_lengths[chain])));
     } else {
       /* Regular insertion chain. Create insrec and add to insdict. */
+      // FIXME: deal with awareness ordering!!
       LIFTERR(indeldict_insert(insdict, pred,
                                (void*)make_insrec((void*)p32, chain_lengths[chain])));
     }
@@ -306,10 +307,137 @@ int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
 
 /****************************** Applying patches ******************************/
 
-// FIXME: see notes in TODO.org
+/* Apply a patch to a weave, modifying the weave. Takes a pointer to the weave,
+   so it can modify it. Returns 0 on success. Does not check patch validity.
 
+   This may just put the patch in the waiting set, and it will not go through
+   the waiting set after applying the patch to try to pull out waiting patches,
+   so that's all up to the client code. */
+int apply_patch(weave_t *weave, patch_t patch) {
+  /* Check if the patch is ready to insert. If not, block. */
+  if (patch_blocking_id(patch, weave->weft) != 0) {
+    uint64_t id = patch_blocking_id(patch, weave->weft);
+    printf("blocking on (%u,%u)\n", YARN(id), OFFSET(id));
+    add_to_waitset(&weave->wset, patch);
+    return 0;
+  }
+
+  /* Build insdict and deldict */
+  insdict_t insdict = NULL; deldict_t deldict = NULL;
+  LIFTERR(make_indeldict(patch, &insdict, &deldict));
+
+  /* Iterate through the weave, looking at each atom to see if it's an anchor
+     for anything in the insdict or deldict. If so, add that to an insertion
+     vector. */
+  vector_t insvec = new_vector();
+  uint64_t id, pred; uint32_t c;
+  uint64_t *ids = weave->ids; uint32_t *bodies = weave->bodies;
+
+  for (uint32_t i = 0; i < weave->length; i++) {
+    READ_ATOM(id, pred, c, ids, bodies);
+    
+    /* Check deldict */
+    void *delatom = indeldict_get(deldict, id);
+    if (delatom != NULL) {
+      printf("found delatom\n");
+      insvec = vector_append(insvec, (Word_t)i+1);
+      insvec = vector_append(insvec, 1);
+      insvec = vector_append(insvec, (Word_t)delatom);
+      continue;
+    }
+    /* Check insdict */
+    insrec_t *insrec = indeldict_get(insdict, id);
+    if (insrec != NULL) {
+      printf("found insatom\n");
+      insvec = vector_append(insvec, (Word_t)i+1);
+      insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
+      insvec = vector_append(insvec, (Word_t)insrec->chain);
+      continue;
+    }
+  }
+  
+  delete_insdict(insdict); delete_deldict(deldict);
+
+  /* Apply the insertion vector */
+  *weave = apply_insvec(*weave, insvec, patch_length_atoms(patch));
+
+  /* Update the weft */
+  uint64_t high_id = patch_highest_id(patch);
+  LIFTERR(weft_extend(&weave->weft, YARN(high_id), OFFSET(high_id)));
+  return 0;
+}
 
 /********************************** Testing ***********************************/
+
+// int main(void) {
+//   weave_t w = new_weave(40);
+//   weave_print(w);
+// 
+//   patch_t patch1 = make_patch1();
+//   patch_t patch2 = make_patch2();
+//   patch_t patch3 = make_patch3();
+// 
+//   void *chain1 = patch_atoms(patch1);
+//   void *chain3 = patch_atoms(patch3);
+//   
+//   vector_t insvec = new_vector();
+//   insvec = vector_append(insvec, 1);
+//   insvec = vector_append(insvec, 4);
+//   insvec = vector_append(insvec, (Word_t)chain1);
+//   insvec = vector_append(insvec, 2);
+//   insvec = vector_append(insvec, 1);
+//   insvec = vector_append(insvec, (Word_t)chain3);
+//   
+//   w = apply_insvec(w, insvec, 5); free(insvec);
+//   weave_print(w);
+// 
+//   /* Look at deldicts */
+//   deldict_t deldict = NULL;
+//   LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 22), (void*)22242));
+//   LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 18), (void*)21842));
+//   LIFTERR(indeldict_insert(&deldict, PACK_ID(5, 55), (void*)55542));
+// 
+//   printf("(2,22) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 22)));
+//   printf("(2,18) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 18)));
+//   printf("(5,55) => %li\n", (long)indeldict_get(deldict, PACK_ID(5, 55)));
+// 
+//   delete_deldict(deldict);
+// 
+//   /* Look at insdicts */
+//   insdict_t insdict = NULL;
+//   LIFTERR(indeldict_insert(&insdict, PACK_ID(2, 22), make_insrec((void*)22242, 111)));
+//   LIFTERR(indeldict_insert(&insdict, PACK_ID(2, 18), make_insrec((void*)21842, 222)));
+//   LIFTERR(indeldict_insert(&insdict, PACK_ID(5, 55), make_insrec((void*)55542, 333)));
+//   
+//   printf("(2,22) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(2, 22)))->chain));
+//   printf("(2,18) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(2, 18)))->chain));
+//   printf("(5,55) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(5, 55)))->chain));
+// 
+//   delete_insdict(insdict);
+// 
+//   /* Make insdict and deldict from patches, and show them. */
+//   deldict = NULL; insdict = NULL;
+//   LIFTERR(make_indeldict(patch1, &insdict, &deldict));
+//   print_judyl2(insdict); print_judyl2(deldict);
+//   delete_insdict(insdict); delete_deldict(deldict);
+//   printf("\n");
+// 
+//   deldict = NULL; insdict = NULL;
+//   LIFTERR(make_indeldict(patch2, &insdict, &deldict));
+//   print_judyl2(insdict); print_judyl2(deldict);
+//   delete_insdict(insdict); delete_deldict(deldict);
+//   printf("\n");
+// 
+//   deldict = NULL; insdict = NULL;
+//   LIFTERR(make_indeldict(patch3, &insdict, &deldict));
+//   print_judyl2(insdict); print_judyl2(deldict);
+//   delete_insdict(insdict); delete_deldict(deldict);
+//   printf("\n");
+// 
+//   delete_weave(w);
+//   free(patch1); free(patch2); free(patch3);
+//   return 0;
+// }
 
 int main(void) {
   weave_t w = new_weave(40);
@@ -319,64 +447,14 @@ int main(void) {
   patch_t patch2 = make_patch2();
   patch_t patch3 = make_patch3();
 
-  void *chain1 = patch_atoms(patch1);
-  void *chain3 = patch_atoms(patch3);
-  
-  vector_t insvec = new_vector();
-  insvec = vector_append(insvec, 1);
-  insvec = vector_append(insvec, 4);
-  insvec = vector_append(insvec, (Word_t)chain1);
-  insvec = vector_append(insvec, 2);
-  insvec = vector_append(insvec, 1);
-  insvec = vector_append(insvec, (Word_t)chain3);
-  
-  w = apply_insvec(w, insvec, 5); free(insvec);
+  LIFTERR(apply_patch(&w, patch1));
   weave_print(w);
 
-  /* Look at deldicts */
-  deldict_t deldict = NULL;
-  LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 22), (void*)22242));
-  LIFTERR(indeldict_insert(&deldict, PACK_ID(2, 18), (void*)21842));
-  LIFTERR(indeldict_insert(&deldict, PACK_ID(5, 55), (void*)55542));
+  LIFTERR(apply_patch(&w, patch2));
+  weave_print(w);
 
-  printf("(2,22) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 22)));
-  printf("(2,18) => %li\n", (long)indeldict_get(deldict, PACK_ID(2, 18)));
-  printf("(5,55) => %li\n", (long)indeldict_get(deldict, PACK_ID(5, 55)));
+  LIFTERR(apply_patch(&w, patch3));
+  weave_print(w);
 
-  delete_deldict(deldict);
-
-  /* Look at insdicts */
-  insdict_t insdict = NULL;
-  LIFTERR(indeldict_insert(&insdict, PACK_ID(2, 22), make_insrec((void*)22242, 111)));
-  LIFTERR(indeldict_insert(&insdict, PACK_ID(2, 18), make_insrec((void*)21842, 222)));
-  LIFTERR(indeldict_insert(&insdict, PACK_ID(5, 55), make_insrec((void*)55542, 333)));
-  
-  printf("(2,22) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(2, 22)))->chain));
-  printf("(2,18) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(2, 18)))->chain));
-  printf("(5,55) => %li\n", (long)(((insrec_t*)indeldict_get(insdict, PACK_ID(5, 55)))->chain));
-
-  delete_insdict(insdict);
-
-  /* Make insdict and deldict from patch */
-  deldict = NULL; insdict = NULL;
-  LIFTERR(make_indeldict(patch1, &insdict, &deldict));
-  print_judyl2(insdict); print_judyl2(deldict);
-  delete_insdict(insdict); delete_deldict(deldict);
-  printf("\n");
-
-  deldict = NULL; insdict = NULL;
-  LIFTERR(make_indeldict(patch2, &insdict, &deldict));
-  print_judyl2(insdict); print_judyl2(deldict);
-  delete_insdict(insdict); delete_deldict(deldict);
-  printf("\n");
-
-  deldict = NULL; insdict = NULL;
-  LIFTERR(make_indeldict(patch3, &insdict, &deldict));
-  print_judyl2(insdict); print_judyl2(deldict);
-  delete_insdict(insdict); delete_deldict(deldict);
-  printf("\n");
-
-  delete_weave(w);
-  free(patch1); free(patch2); free(patch3);
   return 0;
 }

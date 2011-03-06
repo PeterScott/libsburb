@@ -207,6 +207,14 @@ uint64_t patch_blocking_id(patch_t patch, weft_t weft) {
   return 0;
 }
 
+/* Return the id of the last atom in the patch. */
+uint64_t patch_highest_id(patch_t patch) {
+  uint32_t len_atoms = patch_length_atoms(patch);
+  uint32_t *atom_ptr = patch_atoms(patch); atom_ptr += len_atoms*5 - 5;
+  return *(uint64_t*)atom_ptr;
+}
+  
+
 /******************************** Testing code ********************************/
 
 #ifdef DEBUG
@@ -278,6 +286,14 @@ patch_t make_patch3(void) {
 // 
 //   printf("Patch 3: Alice saves awareness of Bob's patches\n");
 //   print_patch(patch3);
+// 
+//   /* Look at last atoms in patches. */
+//   uint64_t id = patch_highest_id(patch1);
+//   printf("Patch 1 highest id: (%u, %u)\n", YARN(id), OFFSET(id));
+//   id = patch_highest_id(patch2);
+//   printf("Patch 2 highest id: (%u, %u)\n", YARN(id), OFFSET(id));
+//   id = patch_highest_id(patch3);
+//   printf("Patch 3 highest id: (%u, %u)\n\n", YARN(id), OFFSET(id));
 // 
 //   /* Check to see which patches are ready to be applied. */
 //   weft_t weft0 = new_weft();

@@ -126,10 +126,13 @@
    chain* words. All indices are in ascending order.
 *** DONE Write apply_insvec_alloc
 *** DONE Write apply_insvec_inplace
+** TODO Write function to generate insdict and deldict.
+   Remember that the code-path for insdict is tricky! You have to handle unaware
+   siblings!
 ** TODO Write patch insertion code
    Make the insdict and deldict, iterate, create insertion vector, insert,
    return.
-** TODO Ditch complicated waiting sets, and switch to vectors of patches
+** DONE Ditch complicated waiting sets, and switch to vectors of patches
    Every time you call apply_insvec, go through waiting set and try to apply
    patches until you either come to the end or successfully apply one. If you
    successfully apply one, remove it from the waiting set and start over.
