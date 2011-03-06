@@ -296,7 +296,6 @@ int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
                                (void*)make_insrec((void*)p32, chain_lengths[chain])));
     } else {
       /* Regular insertion chain. Create insrec and add to insdict. */
-      // FIXME: deal with awareness ordering!!
       LIFTERR(indeldict_insert(insdict, pred,
                                (void*)make_insrec((void*)p32, chain_lengths[chain])));
     }
@@ -339,7 +338,6 @@ int apply_patch(weave_t *weave, patch_t patch) {
     /* Check deldict */
     void *delatom = indeldict_get(deldict, id);
     if (delatom != NULL) {
-      printf("found delatom\n");
       insvec = vector_append(insvec, (Word_t)i+1);
       insvec = vector_append(insvec, 1);
       insvec = vector_append(insvec, (Word_t)delatom);
@@ -348,7 +346,9 @@ int apply_patch(weave_t *weave, patch_t patch) {
     /* Check insdict */
     insrec_t *insrec = indeldict_get(insdict, id);
     if (insrec != NULL) {
-      printf("found insatom\n");
+      // FIXME: deal with awareness ordering!! Peek at next atom, check weft,
+      // etc. Also abstract out the start-traversal/peek/next operations into
+      // macros.
       insvec = vector_append(insvec, (Word_t)i+1);
       insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
       insvec = vector_append(insvec, (Word_t)insrec->chain);
