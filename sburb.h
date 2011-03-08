@@ -24,9 +24,6 @@
     __typeof__ (b) _b = (b);    \
     _a < _b ? _a : _b; })
 
-//#define MAX(a, b) ((a) > (b) ? (a) : (b))
-//#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 #define TRUE  1
 #define FALSE 0
 
