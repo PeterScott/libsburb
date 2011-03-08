@@ -80,7 +80,12 @@ weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count
         READ_ATOM_SEQ(id, pred, c, chain);
         //printf("COPY id: %llu, pred: %llu, c: %u\n", id, pred, c);
         WRITE_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, j);
+        /* Add to memodict if necessary */
+        if (YARN(id) != YARN(pred))
+          memodict_add(&weave.memodict, id, pull(weave.memodict, id, pred));
       }
+      /* Add chain to weft */
+      weft_extend(&weave.weft, YARN(id), OFFSET(id));
       i -= chain_len; i++; displacement -= chain_len;
       vec_len -= 3; vec_head -= 3;
     } else {
@@ -120,7 +125,12 @@ weave_t apply_insvec_alloc(weave_t weave, vector_t insvec, uint32_t atom_count) 
       for (int j = 0; j < chain_len; j++) {
         READ_ATOM_SEQ(id, pred, c, chain);
         WRITE_ATOM(id, pred, c, new_ids, new_bodies);
+        /* Add to memodict if necessary */
+        if (YARN(id) != YARN(pred))
+          memodict_add(&weave.memodict, id, pull(weave.memodict, id, pred));
       }
+      /* Add chain to weft */
+      weft_extend(&weave.weft, YARN(id), OFFSET(id));
       i += chain_len - 1;
       vec_len -= 3; vec_head += 3;
     } else {
@@ -448,6 +458,8 @@ int apply_patch(weave_t *weave, patch_t patch) {
 //   
 //   w = apply_insvec(w, insvec, 5); free(insvec);
 //   weave_print(w);
+//   printf("WEFT:\n"); weft_print(w.weft);
+//   printf("MEMODICT:\n"); memodict_print(w.memodict);
 // 
 //   /* Look at deldicts */
 //   deldict_t deldict = NULL;
@@ -513,7 +525,9 @@ int main(void) {
 
   LIFTERR(apply_patch(&w, patch3));
   weave_print(w);
-
+  
+  printf("WEFT:\n");     weft_print(w.weft);
+  printf("MEMODICT:\n"); memodict_print(w.memodict);
   delete_weave(w);
   free(patch1); free(patch2); free(patch3);
   return 0;
