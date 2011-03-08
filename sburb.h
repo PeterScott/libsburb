@@ -14,8 +14,18 @@
 /* Evaluate the expression. If it is not zero, return -1. */
 #define LIFTERR(expr) do { if ((expr) != 0) return -1; } while (0);
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a,b)                \
+  ({__typeof__ (a) _a = (a);    \
+    __typeof__ (b) _b = (b);    \
+    _a > _b ? _a : _b; })
+
+#define MIN(a,b)                \
+  ({__typeof__ (a) _a = (a);    \
+    __typeof__ (b) _b = (b);    \
+    _a < _b ? _a : _b; })
+
+//#define MAX(a, b) ((a) > (b) ? (a) : (b))
+//#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #define TRUE  1
 #define FALSE 0
@@ -127,6 +137,8 @@ int weft_set(weft_t *weft, uint32_t yarn, uint32_t offset);
 int weft_extend(weft_t *weft, uint32_t yarn, uint32_t offset);
 int weft_covers(weft_t weft, uint64_t id);
 int weft_merge_into(weft_t *dest, weft_t other);
+int weft_gt(weft_t a, weft_t b);
+
 
 /************************ Id-to-weft memoization dicts ************************/
 

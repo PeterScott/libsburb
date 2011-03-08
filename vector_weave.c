@@ -145,6 +145,8 @@ weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count) {
     return apply_insvec_alloc(weave, insvec, atom_count);
 }
 
+// FIXME: make apply_insvec_* update weft and memodict.
+
 
 /************************** Predecessor lookup dicts **************************/
 
@@ -346,13 +348,68 @@ int apply_patch(weave_t *weave, patch_t patch) {
     /* Check insdict */
     insrec_t *insrec = indeldict_get(insdict, id);
     if (insrec != NULL) {
-      // FIXME: deal with awareness ordering!! Peek at next atom, check weft,
-      // etc. Also abstract out the start-traversal/peek/next operations into
-      // macros.
-      insvec = vector_append(insvec, (Word_t)i+1);
-      insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
-      insvec = vector_append(insvec, (Word_t)insrec->chain);
-      continue;
+      /* Easy insertion: save-awareness chains */
+      uint32_t *irptr = insrec->chain;
+      uint64_t id_head, pred_head; uint32_t c_head;
+      READ_ATOM_SEQ(id_head, pred_head, c_head, irptr);
+      if (c_head == ATOM_CHAR_SAVE) {
+        insvec = vector_append(insvec, (Word_t)i+1);
+        insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
+        insvec = vector_append(insvec, (Word_t)insrec->chain);
+        goto cont;
+      }
+
+      /* Begin local subtraversal */
+      uint64_t *ids_local = ids; uint32_t *bodies_local = bodies;
+
+      /* Skip past any deletor atoms, and put cursor after them. */
+      uint64_t id_neighbor, pred_neighbor; uint32_t c_neighbor;
+      do {
+        READ_ATOM(id_neighbor, pred_neighbor, c_neighbor, ids_local, bodies_local);
+      } while (c_neighbor == ATOM_CHAR_DEL);
+      ids_local--; bodies_local -= 3;
+
+      /* Pull the awareness weft of the insrec's head. */
+      weft_t head_weft = pull(weave->memodict, id_head, pred_head);
+
+      // NOTE: we can and should break out of here early.
+      for (uint32_t j = i; j <= weave->length;) {
+        /* Peek at right neighbor. If we're aware of it, insert chain here. */
+        if (weft_covers(head_weft, id_neighbor)) {
+          insvec = vector_append(insvec, (Word_t)j+1);
+          insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
+          insvec = vector_append(insvec, (Word_t)insrec->chain);
+          free(head_weft); goto cont;
+        }
+
+        /* We must insert in weft order. First, check if my weftI is greater
+           than that of the atom to my right (that I see with cur.current()),
+           which I shall call r. If so, insert me here. */
+        uint64_t rid = id_neighbor;
+        weft_t r_weft = pull(weave->memodict, rid, 0);
+        if (weft_gt(head_weft, r_weft)) { /* Insert here. */
+          insvec = vector_append(insvec, (Word_t)j+1);
+          insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
+          insvec = vector_append(insvec, (Word_t)insrec->chain);
+          free(head_weft); free(r_weft); goto cont;
+        }
+
+        /* Step past the causal block of r, and try looking at the new right
+           neighbor on the next iteration of this loop. We do this by stepping
+           until READ_ATOM returns an atom whose predecessor p is not r, and
+           where r is aware of p. If we come to the end, we will run into the
+           end atom sentinel, which will stop the iteration and give us our
+           insertion point. */
+        uint64_t cur_id, p; uint32_t cur_c;
+        READ_ATOM(cur_id, p, cur_c, ids_local, bodies_local); j++;
+        while (!(p != rid && weft_covers(r_weft, p))) {
+          READ_ATOM(cur_id, p, cur_c, ids_local, bodies_local); j++;
+        }
+        free(r_weft);
+      }
+      free(head_weft); return -1;                /* What happened? */
+      
+      cont: continue;           /* Good end */
     }
   }
   
@@ -360,6 +417,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
 
   /* Apply the insertion vector */
   *weave = apply_insvec(*weave, insvec, patch_length_atoms(patch));
+  free(insvec);
 
   /* Update the weft */
   uint64_t high_id = patch_highest_id(patch);
@@ -456,5 +514,7 @@ int main(void) {
   LIFTERR(apply_patch(&w, patch3));
   weave_print(w);
 
+  delete_weave(w);
+  free(patch1); free(patch2); free(patch3);
   return 0;
 }

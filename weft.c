@@ -112,6 +112,30 @@ int weft_merge_into(weft_t *dest, weft_t other) {
   return 0;
 }
 
+/* Compare wefts: is a > b? */
+int weft_gt(weft_t a, weft_t b) {
+  Word_t *pvalue_a; Word_t index_a; Word_t a_len;
+  Word_t *pvalue_b; Word_t index_b; Word_t b_len;
+
+  /* Iterate */
+  index_a = index_b = 0;
+  JLF(pvalue_a, a, index_a); JLF(pvalue_b, b, index_b);
+  while (pvalue_a != NULL && pvalue_b != NULL) {
+    uint32_t my_yarn = index_a, my_offset = *pvalue_a;
+    uint32_t other_yarn = index_b, other_offset = *pvalue_b;
+
+    if (my_yarn < other_yarn) return 1;
+    if (my_yarn > other_yarn) return 0;
+    if (my_offset > other_offset) return 0;
+    if (my_offset < other_offset) return 1;
+    JLN(pvalue_a, a, index_a); JLN(pvalue_b, b, index_b);
+  }
+
+  JLC(a_len, a, 0, -1); JLC(b_len, b, 0, -1);
+  if (a_len > b_len) return 1;
+  else return 0;
+}
+  
 
 /********************************* Debugging **********************************/
 #ifdef DEBUG
