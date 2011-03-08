@@ -129,10 +129,10 @@
 ** DONE Write function to generate insdict and deldict.
    Remember that the code-path for insdict is tricky! You have to handle unaware
    siblings! EDIT: no, wait, we deal with that in the patch insertion code.
-** TODO Write patch insertion code
+** DONE Write patch insertion code
    Make the insdict and deldict, iterate, create insertion vector, insert,
    return. And update memodict.
-** TODO Make the patch insertion update memodict.
+** DONE Make the patch insertion update memodict.
 ** TODO Factor out start-traversal/peek/next into macros
 ** DONE Ditch complicated waiting sets, and switch to vectors of patches
    Every time you call apply_insvec, go through waiting set and try to apply
