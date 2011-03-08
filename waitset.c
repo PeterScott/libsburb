@@ -1,11 +1,17 @@
 /* Waiting sets implemented as sparse arrays of patch pointers. Which in turn
    are represented as JudyL arrays mapping from indices to patch pointers. */
+
 #include "sburb.h"
 
+/* Allocate and return a new, empty waiting set. Does not actually allocate
+   anything, so unless you put something in the waiting set, you don't actually
+   need to free this. */
 waitset_t new_waitset(void) {
   return (waitset_t)NULL;
 }
 
+/* Free a waiting set, deleting everything. If delete_patches is true, then it
+   will also delete the patches themselves; otherwise it won't. */
 void delete_waitset(waitset_t waitset, int delete_patches) {
   Word_t index; Word_t *pvalue; Word_t rc_word;
 
@@ -19,6 +25,8 @@ void delete_waitset(waitset_t waitset, int delete_patches) {
   JLFA(rc_word, waitset);
 }
 
+/* Add a patch to the waiting set. Takes a pointer to a waiting set, and
+   modifies it. Returns zero on success, nonzero on error. */
 int add_to_waitset(waitset_t *wset, patch_t patch) {
   Word_t index; Word_t *pvalue; waitset_t temp = *wset;
 
@@ -37,6 +45,7 @@ int waitset_empty(waitset_t wset) {
   return rc_word == 0;
 }
 
+/* Remove item i from the waitset. */
 int remove_from_waitset(waitset_t *wset, int i) {
   Word_t index; waitset_t temp = *wset; int rc_int;
 
