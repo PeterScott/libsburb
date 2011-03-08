@@ -155,8 +155,6 @@ weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count) {
     return apply_insvec_alloc(weave, insvec, atom_count);
 }
 
-// FIXME: make apply_insvec_* update weft and memodict.
-
 
 /************************** Predecessor lookup dicts **************************/
 
