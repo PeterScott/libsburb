@@ -137,6 +137,8 @@ memodict_t new_memodict(void);
 void delete_memodict(memodict_t memodict);
 void memodict_print(memodict_t memodict);
 int memodict_add(memodict_t *memodict, uint64_t id, weft_t weft);
+weft_t memodict_get(memodict_t memodict, uint64_t id);
+weft_t pull(memodict_t memodict, uint64_t id, uint64_t pred);
 
 
 /*********************************** Weaves ***********************************/
