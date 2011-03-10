@@ -67,18 +67,17 @@ weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count
 
   for (int i = weave.length - 1; i >= 0; i--) {
     uint64_t id, pred; uint32_t c;
-    //printf("\ni = %i, displacement = %i\n", i, displacement);
-    //printf("vec_head[0] = %i, i - displacement+1 = %i\n",
-    //       vec_len > 0 ? (int)vec_head[0] : 69, i - displacement+1);
+    // printf("\ni = %i, displacement = %i\n", i, displacement);
+    // printf("vec_head[0] = %i, i - displacement+1 = %i\n",
+    //        vec_len > 0 ? (int)vec_head[0] : 69, i - displacement+1);
     if (vec_len == 0) break;
     if (vec_len > 0 && i - displacement + 1 == (int)vec_head[0]) {
       int chain_len = (int)vec_head[1];
       uint32_t *chain = (uint32_t *)vec_head[2];
       // Copy over the chain.
       for (int j = i - chain_len + 1; j <= i; j++) {
-        //printf("Copying from %i to %i\t[i=%i]\n", removeme, j, i);
         READ_ATOM_SEQ(id, pred, c, chain);
-        //printf("COPY id: %llu, pred: %llu, c: %u\n", id, pred, c);
+        //printf("COPY id: %llu, pred: %llu, c: %X\n", id, pred, c);
         WRITE_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, j);
         /* Add to memodict if necessary */
         if (YARN(id) != YARN(pred))
@@ -91,7 +90,7 @@ weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count
     } else {
       //printf("Moving from %i to %i\n", i - displacement, i);
       READ_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, i - displacement);
-      //printf("MOVE id: %llu, pred: %llu, c: %u\n", id, pred, c);
+      //printf("MOVE id: %llu, pred: %llu, c: %X\n", id, pred, c);
       WRITE_ATOM_IDX(id, pred, c, weave.ids, weave.bodies, i);
     }
   }
@@ -126,8 +125,8 @@ weave_t apply_insvec_alloc(weave_t weave, vector_t insvec, uint32_t atom_count) 
         READ_ATOM_SEQ(id, pred, c, chain);
         WRITE_ATOM(id, pred, c, new_ids, new_bodies);
         /* Add to memodict if necessary */
-        if (YARN(id) != YARN(pred))
-          memodict_add(&weave.memodict, id, pull(weave.memodict, id, pred));
+        //if (YARN(id) != YARN(pred))
+        //  memodict_add(&weave.memodict, id, pull(weave.memodict, id, pred));
       }
       /* Add chain to weft */
       weft_extend(&weave.weft, YARN(id), OFFSET(id));
@@ -149,6 +148,19 @@ weave_t apply_insvec_alloc(weave_t weave, vector_t insvec, uint32_t atom_count) 
    atoms will be inserted, so that it can allocate the right amount of
    memory. Does not modify weft. */
 weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count) {
+  /* Debugging: show insvec */
+/* #ifdef DEBUG */
+/*   printf("INSVEC: [atoms: %u] ", atom_count); */
+/*   for (int i = 0; i < VECTOR_LEN(insvec); i++) */
+/*     printf("%llu ", (long long int)VECTOR_GET(insvec, i)); */
+/*   printf("\n"); */
+/*   uint32_t *chain = (uint32_t*)VECTOR_GET(insvec, 2); */
+/*   uint64_t id, pred; uint32_t c; */
+/*   READ_ATOM_SEQ(id, pred, c, chain); */
+/*   printf("[id:(%u,%u)\tpred:(%u,%u)\t%x]\n", YARN(id), OFFSET(id), */
+/*          YARN(pred), OFFSET(pred), (int)c); */
+/* #endif */
+
   if (atom_count < weave.capacity)
     return apply_insvec_inplace(weave, insvec, atom_count);
   else
@@ -277,7 +289,8 @@ static inline insrec_t *make_insrec(void *chain, uint16_t len_atoms) {
    chains, it creates an insrec and inserts that into insdict. For deletion
    chains, it iterates through all the atoms and adds each one to the deldict.
 */
-int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
+int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict, 
+                   weave_t *weave) {
   uint32_t *p32 = patch; void *ptr = patch;
   uint32_t length_bytes; uint8_t chain_count;
   READ_PATCH_HEADER(length_bytes, chain_count, ptr); p32 = ptr;
@@ -294,12 +307,17 @@ int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
   for (uint32_t chain = 0; chain < chain_count; chain++) {
     uint64_t id, pred; uint32_t c;
     READ_ATOM_SEQ(id, pred, c, p32); p32 -= 5; /* peek */
+    //    printf("$ Processing patch atom: (%u,%u),\t(%u,%u),\t%X\n",
+    //           YARN(id), OFFSET(id), YARN(pred), OFFSET(pred), (int)c);
     if (c == ATOM_CHAR_DEL) {
       /* Deletion chain. Add deletors to deldict. */
       for (uint16_t i = chain_lengths[chain]; i > 0; i--) {
         READ_ATOM_SEQ(id, pred, c, p32);
         LIFTERR(indeldict_insert(deldict, pred, (void*)(p32 - 5)));
+        if (YARN(id) != YARN(pred))
+          memodict_add(&(weave->memodict), id, pull(weave->memodict, id, pred));
       }
+      continue;
     } else if (c == ATOM_CHAR_SAVE) {
       /* Save-awareness chain. Add to insrec for end atom. */
       LIFTERR(indeldict_insert(insdict, PACK_ID(0,2),
@@ -308,6 +326,11 @@ int make_indeldict(patch_t patch, insdict_t *insdict, deldict_t *deldict) {
       /* Regular insertion chain. Create insrec and add to insdict. */
       LIFTERR(indeldict_insert(insdict, pred,
                                (void*)make_insrec((void*)p32, chain_lengths[chain])));
+    }
+    for (uint16_t i = chain_lengths[chain]; i > 0; i--) {
+      READ_ATOM_SEQ(id, pred, c, p32);
+      if (YARN(id) != YARN(pred))
+        memodict_add(&(weave->memodict), id, pull(weave->memodict, id, pred));
     }
   }
   free(chain_lengths);
@@ -333,7 +356,8 @@ int apply_patch(weave_t *weave, patch_t patch) {
 
   /* Build insdict and deldict */
   insdict_t insdict = NULL; deldict_t deldict = NULL;
-  LIFTERR(make_indeldict(patch, &insdict, &deldict));
+  LIFTERR(make_indeldict(patch, &insdict, &deldict, weave));
+  print_judyl2(insdict);
 
   /* Iterate through the weave, looking at each atom to see if it's an anchor
      for anything in the insdict or deldict. If so, add that to an insertion
@@ -361,6 +385,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
       uint64_t id_head, pred_head; uint32_t c_head;
       READ_ATOM_SEQ(id_head, pred_head, c_head, irptr);
       if (c_head == ATOM_CHAR_SAVE) {
+        printf("+ Saving awareness\n");
         insvec = vector_append(insvec, (Word_t)i+1);
         insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
         insvec = vector_append(insvec, (Word_t)insrec->chain);
@@ -379,11 +404,13 @@ int apply_patch(weave_t *weave, patch_t patch) {
 
       /* Pull the awareness weft of the insrec's head. */
       weft_t head_weft = pull(weave->memodict, id_head, pred_head);
+      weft_print(head_weft);
 
       // NOTE: we can and should break out of here early.
       for (uint32_t j = i; j <= weave->length;) {
         /* Peek at right neighbor. If we're aware of it, insert chain here. */
         if (weft_covers(head_weft, id_neighbor)) {
+          printf("+ Aware of neighbor insertion\n");
           insvec = vector_append(insvec, (Word_t)j+1);
           insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
           insvec = vector_append(insvec, (Word_t)insrec->chain);
@@ -396,6 +423,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
         uint64_t rid = id_neighbor;
         weft_t r_weft = pull(weave->memodict, rid, 0);
         if (weft_gt(head_weft, r_weft)) { /* Insert here. */
+          printf("+ Weftgt insertion\n");
           insvec = vector_append(insvec, (Word_t)j+1);
           insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
           insvec = vector_append(insvec, (Word_t)insrec->chain);
@@ -408,13 +436,15 @@ int apply_patch(weave_t *weave, patch_t patch) {
            where r is aware of p. If we come to the end, we will run into the
            end atom sentinel, which will stop the iteration and give us our
            insertion point. */
-        uint64_t cur_id, p; uint32_t cur_c;
-        READ_ATOM(cur_id, p, cur_c, ids_local, bodies_local); j++;
+        uint64_t p; uint32_t cur_c;
+        ids_local++; bodies_local += 3; /* Skip past neighbor */
         while (!(p != rid && weft_covers(r_weft, p))) {
-          READ_ATOM(cur_id, p, cur_c, ids_local, bodies_local); j++;
+          READ_ATOM(id_neighbor, p, cur_c, ids_local, bodies_local); j++;
+          printf("Skipping causal block: (%u,%u)\n", YARN(id_neighbor), OFFSET(id_neighbor));
         }
         free(r_weft);
       }
+      printf("WTF??\n");
       free(head_weft); return -1;                /* What happened? */
       
       cont: continue;           /* Good end */
@@ -511,9 +541,10 @@ int apply_patch(weave_t *weave, patch_t patch) {
 //   weave_t w = new_weave(40);
 //   weave_print(w);
 // 
-//   patch_t patch1 = make_patch1();
-//   patch_t patch2 = make_patch2();
-//   patch_t patch3 = make_patch3();
+//   uint32_t lens[4] = {4, 1, 1, 1};
+//   patch_t patch1 = shorthand_to_patch("T01a1ea1a2sa2a3ta3a4", 1, lens);
+//   patch_t patch2 = shorthand_to_patch("^a3b1xa2b2", 2, lens+1);
+//   patch_t patch3 = shorthand_to_patch("*b2a5", 1, lens+3);
 // 
 //   LIFTERR(apply_patch(&w, patch1));
 //   weave_print(w);
@@ -532,22 +563,18 @@ int apply_patch(weave_t *weave, patch_t patch) {
 // }
 
 int main(void) {
-  weave_t w = new_weave(40);
+  weave_t w = new_weave(400);
   weave_print(w);
 
-  uint32_t lens[4] = {4, 1, 1, 1};
-  patch_t patch1 = shorthand_to_patch("T01a1ea1a2sa2a3ta3a4", 1, lens);
-  patch_t patch2 = shorthand_to_patch("^a3b1xa2b2", 2, lens+1);
-  patch_t patch3 = shorthand_to_patch("*b2a5", 1, lens+3);
+  uint32_t lens[5] = {4, 1, 1, 1, 1};
+  patch_t patch1 = shorthand_to_patch("H01a1oa1a2pa2a3~a3a4", 1, lens); /* Hop~ */
+  patch_t patch2 = shorthand_to_patch("*a4b1ia3b2", 2, lens+1);         /* i */
+  patch_t patch3 = shorthand_to_patch("*a4c1!a3c2", 2, lens+3);         /* ! */
+  /* Goal: either Hopi!~ or Hop!i~, but not both. */
 
-  LIFTERR(apply_patch(&w, patch1));
-  weave_print(w);
-
-  LIFTERR(apply_patch(&w, patch2));
-  weave_print(w);
-
-  LIFTERR(apply_patch(&w, patch3));
-  weave_print(w);
+  LIFTERR(apply_patch(&w, patch1)); weave_print(w);
+  LIFTERR(apply_patch(&w, patch2)); weave_print(w);
+  LIFTERR(apply_patch(&w, patch3)); weave_print(w);
   
   printf("WEFT:\n");     weft_print(w.weft);
   printf("MEMODICT:\n"); memodict_print(w.memodict);
