@@ -22,6 +22,11 @@ void weft_print(weft_t weft) {
     return;
   }
 
+  if (weft == ERRWEFT) {
+    printf("[error weft]\n");
+    return;
+  }
+
   index = 0;
   JLF(pvalue, weft, index);
   while (pvalue != NULL) {
@@ -126,8 +131,8 @@ int weft_gt(weft_t a, weft_t b) {
 
     if (my_yarn < other_yarn) return 1;
     if (my_yarn > other_yarn) return 0;
-    if (my_offset > other_offset) return 0;
-    if (my_offset < other_offset) return 1;
+    if (my_offset > other_offset) return 1;
+    if (my_offset < other_offset) return 0;
     JLN(pvalue_a, a, index_a); JLN(pvalue_b, b, index_b);
   }
 
@@ -204,5 +209,22 @@ void quickweft_print(weft_t weft) {
 //   delete_weft(weft2);
 //   delete_weft(weft3);
 //   delete_weft(qweft);
+//   return 0;
+// }
+
+// int main(int argc, char **argv) {
+//   if (argc != 3) {
+//     printf("usage: %s weft1 weft2\n", argv[0]);
+//     exit(1);
+//   }
+//   
+//   weft_t a = quickweft(argv[1]);
+//   weft_t b = quickweft(argv[2]);
+// 
+//   if (weft_gt(a, b))
+//     printf("%s > %s\n", argv[1], argv[2]);
+//   else
+//     printf("%s <= %s\n", argv[1], argv[2]);
+// 
 //   return 0;
 // }
