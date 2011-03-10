@@ -507,13 +507,38 @@ int apply_patch(weave_t *weave, patch_t patch) {
 //   return 0;
 // }
 
+// int main(void) {
+//   weave_t w = new_weave(40);
+//   weave_print(w);
+// 
+//   patch_t patch1 = make_patch1();
+//   patch_t patch2 = make_patch2();
+//   patch_t patch3 = make_patch3();
+// 
+//   LIFTERR(apply_patch(&w, patch1));
+//   weave_print(w);
+// 
+//   LIFTERR(apply_patch(&w, patch2));
+//   weave_print(w);
+// 
+//   LIFTERR(apply_patch(&w, patch3));
+//   weave_print(w);
+//   
+//   printf("WEFT:\n");     weft_print(w.weft);
+//   printf("MEMODICT:\n"); memodict_print(w.memodict);
+//   delete_weave(w);
+//   free(patch1); free(patch2); free(patch3);
+//   return 0;
+// }
+
 int main(void) {
   weave_t w = new_weave(40);
   weave_print(w);
 
-  patch_t patch1 = make_patch1();
-  patch_t patch2 = make_patch2();
-  patch_t patch3 = make_patch3();
+  uint32_t lens[4] = {4, 1, 1, 1};
+  patch_t patch1 = shorthand_to_patch("T01a1ea1a2sa2a3ta3a4", 1, lens);
+  patch_t patch2 = shorthand_to_patch("^a3b1xa2b2", 2, lens+1);
+  patch_t patch3 = shorthand_to_patch("*b2a5", 1, lens+3);
 
   LIFTERR(apply_patch(&w, patch1));
   weave_print(w);

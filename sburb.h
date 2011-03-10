@@ -225,6 +225,8 @@ patch_t make_patch3(void);
 
 void print_judyl(Pvoid_t judy);
 void print_judyl2(Pvoid_t judy);
+patch_t shorthand_to_patch(char *shorthand, uint8_t chain_count,
+                           uint32_t *chain_lengths);
 
 #endif
 
