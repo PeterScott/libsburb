@@ -16,5 +16,6 @@ weave_t new_weave(uint32_t capacity);
 void delete_weave(weave_t weave);
 void weave_print(weave_t weave);
 weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count);
+int apply_patch(weave_t *weave, patch_t patch);
 
 #endif

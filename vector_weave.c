@@ -357,7 +357,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
   /* Build insdict and deldict */
   insdict_t insdict = NULL; deldict_t deldict = NULL;
   LIFTERR(make_indeldict(patch, &insdict, &deldict, weave));
-  print_judyl2(insdict);
+  //print_judyl2(insdict);
 
   /* Iterate through the weave, looking at each atom to see if it's an anchor
      for anything in the insdict or deldict. If so, add that to an insertion
@@ -385,7 +385,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
       uint64_t id_head, pred_head; uint32_t c_head;
       READ_ATOM_SEQ(id_head, pred_head, c_head, irptr);
       if (c_head == ATOM_CHAR_SAVE) {
-        printf("+ Saving awareness\n");
+        //printf("+ Saving awareness\n");
         insvec = vector_append(insvec, (Word_t)i+1);
         insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
         insvec = vector_append(insvec, (Word_t)insrec->chain);
@@ -404,13 +404,13 @@ int apply_patch(weave_t *weave, patch_t patch) {
 
       /* Pull the awareness weft of the insrec's head. */
       weft_t head_weft = pull(weave->memodict, id_head, pred_head);
-      weft_print(head_weft);
+      //weft_print(head_weft);
 
       // NOTE: we can and should break out of here early.
       for (uint32_t j = i; j <= weave->length;) {
         /* Peek at right neighbor. If we're aware of it, insert chain here. */
         if (weft_covers(head_weft, id_neighbor)) {
-          printf("+ Aware of neighbor insertion\n");
+          //printf("+ Aware of neighbor insertion\n");
           insvec = vector_append(insvec, (Word_t)j+1);
           insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
           insvec = vector_append(insvec, (Word_t)insrec->chain);
@@ -423,7 +423,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
         uint64_t rid = id_neighbor;
         weft_t r_weft = pull(weave->memodict, rid, 0);
         if (weft_gt(head_weft, r_weft)) { /* Insert here. */
-          printf("+ Weftgt insertion\n");
+          //printf("+ Weftgt insertion\n");
           insvec = vector_append(insvec, (Word_t)j+1);
           insvec = vector_append(insvec, (Word_t)insrec->len_atoms);
           insvec = vector_append(insvec, (Word_t)insrec->chain);
@@ -440,7 +440,7 @@ int apply_patch(weave_t *weave, patch_t patch) {
         ids_local++; bodies_local += 3; /* Skip past neighbor */
         while (!(p != rid && weft_covers(r_weft, p))) {
           READ_ATOM(id_neighbor, p, cur_c, ids_local, bodies_local); j++;
-          printf("Skipping causal block: (%u,%u)\n", YARN(id_neighbor), OFFSET(id_neighbor));
+          //printf("Skipping causal block: (%u,%u)\n", YARN(id_neighbor), OFFSET(id_neighbor));
         }
         free(r_weft);
       }
@@ -562,23 +562,23 @@ int apply_patch(weave_t *weave, patch_t patch) {
 //   return 0;
 // }
 
-int main(void) {
-  weave_t w = new_weave(400);
-  weave_print(w);
-
-  uint32_t lens[5] = {4, 1, 1, 1, 1};
-  patch_t patch1 = shorthand_to_patch("H01a1oa1a2pa2a3~a3a4", 1, lens); /* Hop~ */
-  patch_t patch2 = shorthand_to_patch("*a4b1ia3b2", 2, lens+1);         /* i */
-  patch_t patch3 = shorthand_to_patch("*a4c1!a3c2", 2, lens+3);         /* ! */
-  /* Goal: either Hopi!~ or Hop!i~, but not both. */
-
-  LIFTERR(apply_patch(&w, patch1)); weave_print(w);
-  LIFTERR(apply_patch(&w, patch2)); weave_print(w);
-  LIFTERR(apply_patch(&w, patch3)); weave_print(w);
-  
-  printf("WEFT:\n");     weft_print(w.weft);
-  printf("MEMODICT:\n"); memodict_print(w.memodict);
-  delete_weave(w);
-  free(patch1); free(patch2); free(patch3);
-  return 0;
-}
+// int main(void) {
+//   weave_t w = new_weave(400);
+//   weave_print(w);
+// 
+//   uint32_t lens[5] = {4, 1, 1, 1, 1};
+//   patch_t patch1 = shorthand_to_patch("H01a1oa1a2pa2a3~a3a4", 1, lens); /* Hop~ */
+//   patch_t patch2 = shorthand_to_patch("*a4b1ia3b2", 2, lens+1);         /* i */
+//   patch_t patch3 = shorthand_to_patch("*a4c1!a3c2", 2, lens+3);         /* ! */
+//   /* Goal: either Hopi!~ or Hop!i~, but not both. */
+// 
+//   LIFTERR(apply_patch(&w, patch1)); weave_print(w);
+//   LIFTERR(apply_patch(&w, patch2)); weave_print(w);
+//   LIFTERR(apply_patch(&w, patch3)); weave_print(w);
+//   
+//   printf("WEFT:\n");     weft_print(w.weft);
+//   printf("MEMODICT:\n"); memodict_print(w.memodict);
+//   delete_weave(w);
+//   free(patch1); free(patch2); free(patch3);
+//   return 0;
+// }
