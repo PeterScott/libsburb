@@ -3,6 +3,7 @@
    the weave. */
 
 #include "sburb.h"
+#include "benchmark.h"
 
 int main(int argc, char **argv) {
   weave_t weave = new_weave(128);
@@ -21,6 +22,7 @@ int main(int argc, char **argv) {
   }
 
   /* Read and apply the patches */
+  BENCHMARK_INIT();
   unsigned int chain_count;
   unsigned int chain_lengths[4096];
   while (fscanf(file, "%u", &chain_count) == 1) {
@@ -58,11 +60,12 @@ int main(int argc, char **argv) {
     assert(patch_length_atoms(patch) == atom_count);
     
     /* Apply the patch, and free it. */
-    LIFTERR(apply_patch(&weave, patch));
+    TICK(); LIFTERR(apply_patch(&weave, patch)); TOCK();
     free(patch);
   }
 
   weave_print(weave);
+  printf("Total time: %i us\n", benchmark_total_time);
   
   /* Clean up and exit. */
   fclose(file);
