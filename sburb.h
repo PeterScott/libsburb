@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <wchar.h>
 #include <assert.h>
 #include <math.h>
 #include <Judy.h>
@@ -26,6 +27,8 @@
 
 #define TRUE  1
 #define FALSE 0
+
+#define NOP {while(0) {}}
 
 /*********************** Serialization/deserialization ************************/
 
@@ -227,6 +230,7 @@ void print_judyl(Pvoid_t judy);
 void print_judyl2(Pvoid_t judy);
 patch_t shorthand_to_patch(char *shorthand, uint8_t chain_count,
                            uint32_t *chain_lengths);
+void weave_scour_print(weave_t weave);
 
 #endif
 

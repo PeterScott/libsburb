@@ -12,10 +12,19 @@ typedef struct {
   waitset_t wset;          /* Waiting set: vectors of patches */
 } weave_t;
 
+/* The state of a weave traversal. */
+typedef struct {
+  uint64_t *ids;
+  uint32_t *bodies;
+  uint32_t remaining_atoms;
+} weave_traversal_state_t;
+
 weave_t new_weave(uint32_t capacity);
 void delete_weave(weave_t weave);
 void weave_print(weave_t weave);
 weave_t apply_insvec(weave_t weave, vector_t insvec, uint32_t atom_count);
 int apply_patch(weave_t *weave, patch_t patch);
+weave_traversal_state_t starting_traversal_state(weave_t weave);
+int scour(wchar_t *buf, int buflen, weave_traversal_state_t *wts);
 
 #endif

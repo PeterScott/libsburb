@@ -66,7 +66,7 @@ weave_t apply_insvec_inplace(weave_t weave, vector_t insvec, uint32_t atom_count
   weave.length += atom_count;
 
   for (int i = weave.length - 1; i >= 0; i--) {
-    uint64_t id, pred; uint32_t c;
+    uint64_t id = 0, pred = 0; uint32_t c = ATOM_CHAR_START;
     // printf("\ni = %i, displacement = %i\n", i, displacement);
     // printf("vec_head[0] = %i, i - displacement+1 = %i\n",
     //        vec_len > 0 ? (int)vec_head[0] : 69, i - displacement+1);
@@ -118,7 +118,7 @@ weave_t apply_insvec_alloc(weave_t weave, vector_t insvec, uint32_t atom_count) 
   
   /* Copy items, inserting chains in their proper places. */
   for (int i = 0, k = 0; i < weave.length; i++) {
-    uint64_t id, pred; uint32_t c; /* Current atom */
+    uint64_t id = 0, pred = 0; uint32_t c = ATOM_CHAR_START; /* current atom */
     if (vec_len > 0 && k == (int)vec_head[0]) { /* chain here */
       int chain_len = (int)vec_head[1]; uint32_t *chain = (uint32_t *)vec_head[2];
       for (int j = 0; j < chain_len; j++) {
@@ -438,10 +438,10 @@ int apply_patch(weave_t *weave, patch_t patch) {
            insertion point. */
         uint64_t p; uint32_t cur_c;
         ids_local++; bodies_local += 3; /* Skip past neighbor */
-        while (!(p != rid && weft_covers(r_weft, p))) {
+        do {
           READ_ATOM(id_neighbor, p, cur_c, ids_local, bodies_local); j++;
           //printf("Skipping causal block: (%u,%u)\n", YARN(id_neighbor), OFFSET(id_neighbor));
-        }
+        } while (!(p != rid && weft_covers(r_weft, p)));
         free(r_weft);
       }
       printf("WTF??\n");
@@ -461,6 +461,74 @@ int apply_patch(weave_t *weave, patch_t patch) {
   uint64_t high_id = patch_highest_id(patch);
   LIFTERR(weft_extend(&weave->weft, YARN(high_id), OFFSET(high_id)));
   return 0;
+}
+
+
+/********************************** Scouring **********************************/
+
+/* Create an initial weave traversal state for a weave. */
+weave_traversal_state_t starting_traversal_state(weave_t weave) {
+  weave_traversal_state_t wts;
+  wts.ids = weave.ids; wts.bodies = weave.bodies;
+  wts.remaining_atoms = weave.length;
+  return wts;
+}
+
+/* Scour a weave, partially. Takes a weave traversal state pointer and a vector
+   weave, as well as a pointer to a buffer of given length to which it should
+   write the characters. The buffer should hold wide chars. Returns the number
+   of characters written. */
+// int scour(wchar_t *buf, int buflen, weave_traversal_state_t *wts) {
+//   uint64_t *ids = wts->ids; uint32_t *bodies = wts->bodies;
+//   int length = wts->remaining_atoms;
+//   int chars_written = 0, i = 0;
+// 
+//   for (i = 0; i < length && chars_written < buflen; i++) {
+//     uint64_t id, pred; uint32_t c;
+//     READ_ATOM(id, pred, c, ids, bodies); i++;
+//   checkdel:
+//     if (ATOM_CHAR_IS_VISIBLE(c)) {
+//       uint64_t vid = id; uint32_t vc = c;
+//       while (i < length) {
+//         READ_ATOM(id, pred, c, ids, bodies); i++;
+//         printf("c: %x, pred:%llu, vid:%llu\n", c, pred, vid);
+//         if (c == ATOM_CHAR_DEL && pred == vid) {
+//           printf("<DEL>"); goto donotprint;
+//         }
+//         if (ATOM_CHAR_IS_VISIBLE(c)) {
+//           buf[chars_written++] = (wchar_t)vc;
+//           goto checkdel;
+//         }
+//       }
+//       buf[chars_written++] = (wchar_t)vc;
+//     donotprint: NOP;
+//     }
+//   }
+// 
+//   wts->ids = ids; wts->bodies = bodies; wts->remaining_atoms -= i;
+//   return chars_written;
+// }
+
+int scour(wchar_t *buf, int buflen, weave_traversal_state_t *wts) {
+  uint64_t *ids = wts->ids; uint32_t *bodies = wts->bodies;
+  int length = wts->remaining_atoms;
+  int i, chars_written = 0;
+
+  for (i = 0; i < length && chars_written < buflen;) {
+    uint64_t id, pred; uint32_t c;
+    READ_ATOM(id, pred, c, ids, bodies); i++;
+    if (ATOM_CHAR_IS_VISIBLE(c)) {
+      uint64_t vid = id; uint32_t vc = c;
+      READ_ATOM(id, pred, c, ids, bodies); i++;
+      if (!(c == ATOM_CHAR_DEL && pred == vid)) {
+        buf[chars_written++] = (wchar_t)vc;
+        ids--; bodies -= 3; i--;
+      }
+    }
+  }
+
+  wts->ids = ids; wts->bodies = bodies; wts->remaining_atoms -= i;
+  return chars_written;
 }
 
 /********************************** Testing ***********************************/

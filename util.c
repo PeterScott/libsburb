@@ -130,4 +130,15 @@ patch_t shorthand_to_patch(char *shorthand, uint8_t chain_count, uint32_t *chain
   return patch;
 }
 
+#define VECTOR_SCOUR_PRINT_BUFLEN 256
+
+void weave_scour_print(weave_t weave) {
+  weave_traversal_state_t wts = starting_traversal_state(weave);
+  wchar_t buf[VECTOR_SCOUR_PRINT_BUFLEN]; int len;
+
+  while ((len = scour(buf, VECTOR_SCOUR_PRINT_BUFLEN, &wts)) > 0)
+    for (int i = 0; i < len; i++)
+      putchar(buf[i]);
+}
+
 #endif

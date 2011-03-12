@@ -65,7 +65,8 @@ int main(int argc, char **argv) {
   }
 
   weave_print(weave);
-  printf("Total time: %i us\n", benchmark_total_time);
+  weave_scour_print(weave);
+  printf("\nTotal time: %i us\n", benchmark_total_time);
   
   /* Clean up and exit. */
   fclose(file);
