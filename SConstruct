@@ -11,7 +11,6 @@ memodict.c weft.c patch.c vector_weave.c waitset.c util.c
 '''
 
 Library('sburb', Split(cfiles))
-#Program('sburb', Split(cfiles), LIBS=['Judy', 'm'])
 Program('snarfstrip', 'snarfstrip.c', LIBS=['Judy', 'm', 'sburb'])
 
 # Build TAGS file with etags
